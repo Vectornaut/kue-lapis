@@ -34,6 +34,8 @@ float F(float phi, float k) {
 
 const float PI_2 = 1.5707963267948966;
 
+// test F against Geek3's plot
+// https://commons.wikimedia.org/wiki/File:Mplwp_incomplete_ellipticFm.svg
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 p = fragCoord / iResolution.xy;
     vec3 color = vec3(1.);
