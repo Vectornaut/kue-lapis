@@ -66,7 +66,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec3 color = vec3(0.1);
     
     if (dot(p, p) < 1.) {
-        vec2 z = 0.5*(peirce_proj(p)/PI + vec2(1.));
+        vec2 z = peirce_proj(p)/PI;
         float u = mod(iTime, 4.) < 2. ? z.x : z.y;
         if (u < 0. || 1. < u) {
             color = vec3(1.);
