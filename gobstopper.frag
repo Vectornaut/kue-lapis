@@ -57,14 +57,30 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     if (dot(p, p) < 1.) {
         vec2 z = cn_coords(p);
         
-        // pick a coordinate to display
-        float u = mod(iTime, 4.) < 2. ? z.x : z.y;
+        // set test and coordinate switches
+        float t = mod(iTime, 8.);
+        float s = mod(t, 4.);
         
-        // show coordinate value
-        if (u < 0.) {
-            fragColor = vec4(1.+u, 1., 0.7, 1.);
+        // pick coordinate
+        float u = t < 4. ? z.x : z.y;
+        
+        // test coordinate
+        if (s < 2.) {
+            // test bounds
+            if (abs(u) > 1.) {
+                fragColor = vec4(1.);
+            } else if (abs(u) > 0.1) {
+                fragColor = vec4(0.4);
+            } else {
+                fragColor = vec4(0.2);
+            }
         } else {
-            fragColor = vec4(1, 1.-u, 0.7, 1.);
+            // show value
+            if (u < 0.) {
+                fragColor = vec4(1.+u, 1., 0.7, 1.);
+            } else {
+                fragColor = vec4(1, 1.-u, 0.7, 1.);
+            }
         }
     } else {
         fragColor = vec4(vec3(0.1), 1.);
