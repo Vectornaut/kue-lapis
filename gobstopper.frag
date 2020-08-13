@@ -1,8 +1,8 @@
 // --- elliptic integral of the first kind ---
 //
-//   William Press and Saul Teukolsky, "Elliptic Integrals"
-//   Computers in Physics, vol. 4, pp. 92--96, 1990
-//   <doi:10.1063/1.4822893>
+// William Press and Saul Teukolsky, "Elliptic Integrals"
+// Computers in Physics, vol. 4, pp. 92--96, 1990
+// <doi:10.1063/1.4822893>
 
 const int N = 12;
 
@@ -32,19 +32,41 @@ float F(float phi, float k) {
     return s * RF(vec3(c*c, 1. - ks*ks, 1.));
 }
 
-const float PI_2 = 1.5707963267948966;
+// --- Peirce projection ---
+//
+// James Pierpont, "Note on C. S. Peirce's paper on
+//     'A Quincuncial Projection of the sphere'
+// American Journal of Mathematics, vol. 18, no. 2, pp. 145--152, 1896
 
-// test F against Geek3's plot
-// https://commons.wikimedia.org/wiki/File:Mplwp_incomplete_ellipticFm.svg
+vec2 cn_coords(vec2 zeta) {
+    float x_sq = zeta.x * zeta.x;
+    float y_sq = zeta.y * zeta.y;
+    float r_sq = x_sq + y_sq;
+    float base = 2.*sqrt(1.-r_sq) + x_sq - y_sq;
+    float flip = 2.*sqrt(1.-r_sq + x_sq*y_sq);
+    return vec2(
+        (r_sq - flip) / base,
+        base / (r_sq + flip)
+    );
+}
+
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-    vec2 p = fragCoord / iResolution.xy;
-    vec3 color = vec3(1.);
+    float small_dim = min(iResolution.x, iResolution.y);
+    vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim;
     
-    for (int n = 5; n >= 0; n--) {
-        if (3.*p.y < F(PI_2*p.x, sqrt(0.2*float(n)))) {
-            color = mix(color, vec3(0.5, 0.2, 0.25*float(n)), 0.2);
+    if (dot(p, p) < 1.) {
+        vec2 z = cn_coords(p);
+        
+        // pick a coordinate to display
+        float u = mod(iTime, 4.) < 2. ? z.x : z.y;
+        
+        // show coordinate value
+        if (u < 0.) {
+            fragColor = vec4(1.+u, 1., 0.7, 1.);
+        } else {
+            fragColor = vec4(1, 1.-u, 0.7, 1.);
         }
+    } else {
+        fragColor = vec4(vec3(0.1), 1.);
     }
-    
-    fragColor = vec4(color, 1.);
 }
