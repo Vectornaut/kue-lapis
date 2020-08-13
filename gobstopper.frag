@@ -51,10 +51,13 @@ vec2 cn_coords(vec2 zeta) {
 }
 
 const float SQRT_1_2 = 0.7071067811865475;
+/*const float K = 1.854074677301372;*/
+const float PI = 3.14159265358979;
 
 vec2 peirce_proj(vec2 zeta) {
     vec2 angles = acos(cn_coords(zeta));
-    return 0.5*vec2(F(angles.x, SQRT_1_2), F(angles.y, SQRT_1_2));
+    /*return 0.5*vec2(F(angle.x, SQRT_1_2), F(angle.y, SQRT_1_2));*/
+    return angles;
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
@@ -62,15 +65,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim;
     vec3 color = vec3(0.1);
     
-    if (mod(iTime, 4.) < 2.) {
-        if (dot(p, p) < 1.) {
-            vec2 z = 0.5*(peirce_proj(p) + vec2(1.));
-            color = vec3(z.x, z.y, 0.7);
-        }
-    } else {
-        if (abs(p.x) + abs(p.y) < 1.) {
-            vec2 z = 0.5*(p + vec2(1.));
-            color = vec3(z.x, z.y, 0.7);
+    if (dot(p, p) < 1.) {
+        vec2 z = 0.5*(peirce_proj(p)/PI + vec2(1.));
+        float u = mod(iTime, 4.) < 2. ? z.x : z.y;
+        if (u < 0. || 1. < u) {
+            color = vec3(1.);
+        } else {
+            color = vec3(u, 0., 0.7);
         }
     }
     fragColor = vec4(color, 1.);
