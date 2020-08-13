@@ -1,3 +1,5 @@
+using Elliptic, Plots
+
 # --- elliptic integral of the first kind ---
 
 N = 12;
@@ -37,4 +39,25 @@ function cn_coords(zeta)
     base = 2*sqrt(1-r_sq) + x_sq - y_sq;
     flip = 2*sqrt(1-r_sq + x_sq*y_sq);
     return (r_sq - flip) / base + im*(base / (r_sq + flip))
+end
+
+SQRT_1_2 = 1/sqrt(2);
+
+function my_peirce_proj(zeta)
+    angles = acos.(reim(cn_coords(zeta)))
+    return 0.5*[my_F(angles[1], SQRT_1_2), my_F(angles[2], SQRT_1_2)]
+end
+
+function good_peirce_proj(zeta)
+    angles = acos.(reim(cn_coords(zeta)))
+    return 0.5*[F(angles[1], 1/2), F(angles[2], 1/2)]
+end
+
+# --- test ---
+
+function test_peirce_proj()
+    mesh = LinRange(0, 1, 200)
+    my_z = my_peirce_proj.(mesh)
+    good_z = good_peirce_proj.(mesh)
+    plot(mesh, [first.(my_z), first.(good_z)])
 end
