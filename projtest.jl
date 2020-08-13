@@ -57,5 +57,12 @@ function test_peirce_proj(N = 12)
     mesh = LinRange(0, 1, 200)
     my_z = [my_peirce_proj(zeta, N) for zeta in mesh]
     good_z = good_peirce_proj.(mesh)
-    plot(mesh, [first.(my_z), first.(good_z)])
+    plot(mesh, [first.(my_z), first.(good_z)], legend = false)
+end
+
+function test_F(N = 12)
+    mesh = LinRange(0, pi, 200)
+    my_z = [my_F(phi, 1/sqrt(2), N) for phi in mesh]
+    good_z = [F(phi, 1/2) for phi in mesh]
+    plot(mesh, [first.(my_z), real.(good_z)], legend = false)
 end
