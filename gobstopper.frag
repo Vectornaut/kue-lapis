@@ -54,7 +54,7 @@ const float SQRT_1_2 = 0.7071067811865475;
 
 vec2 peirce_proj(vec2 zeta) {
     vec2 angles = acos(cn_coords(zeta));
-    return 0.5*vec2(F(zeta.x, SQRT_1_2), F(zeta.y, SQRT_1_2));
+    return 0.5*vec2(F(angles.x, SQRT_1_2), F(angles.y, SQRT_1_2));
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
