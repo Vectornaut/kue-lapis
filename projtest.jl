@@ -2,14 +2,12 @@ using Elliptic, Plots
 
 # --- elliptic integral of the first kind ---
 
-N = 12;
-
 C1 = 1/24.;
 C2 = 0.1;
 C3 = 3/44.;
 C4 = 1/14.;
 
-function RF(u)
+function RF(u, N)
     for n in 1:N
       sqrt_u = sqrt.(u)
       pair = sqrt_u .* sqrt_u[[2,3,1]]
@@ -23,11 +21,11 @@ function RF(u)
     return (1 + (C1*e2 - C2 - C3*e3)*e2 + C4*e3) / sqrt(avg)
 end
 
-function my_F(phi, k)
+function my_F(phi, k, N = 12)
     c = cos(phi)
     s = sin(phi)
     ks = k*s
-    return s * RF([c*c, 1 - ks*ks, 1])
+    return s * RF([c*c, 1 - ks*ks, 1], N)
 end
 
 # --- Peirce projection
@@ -43,9 +41,9 @@ end
 
 SQRT_1_2 = 1/sqrt(2);
 
-function my_peirce_proj(zeta)
+function my_peirce_proj(zeta, N)
     angles = acos.(reim(cn_coords(zeta)))
-    return 0.5*[my_F(angles[1], SQRT_1_2), my_F(angles[2], SQRT_1_2)]
+    return 0.5*[my_F(angles[1], SQRT_1_2, N), my_F(angles[2], SQRT_1_2, N)]
 end
 
 function good_peirce_proj(zeta)
@@ -55,9 +53,9 @@ end
 
 # --- test ---
 
-function test_peirce_proj()
+function test_peirce_proj(N = 12)
     mesh = LinRange(0, 1, 200)
-    my_z = my_peirce_proj.(mesh)
+    my_z = [my_peirce_proj(zeta, N) for zeta in mesh]
     good_z = good_peirce_proj.(mesh)
     plot(mesh, [first.(my_z), first.(good_z)])
 end
