@@ -149,7 +149,7 @@ vec3 stripe(vec2 z, float sheet) {
     }
 }
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+vec3 raw_image(vec2 fragCoord) {
     float small_dim = min(iResolution.x, iResolution.y);
     vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim - vec2(0.8, 0.);
     vec3 color = vec3(0.1, 0.0, 0.2);
@@ -172,7 +172,20 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
             color = stripe(unfold * p_mini, -1.);
         }
     }
-    fragColor = vec4(color, 1.);
+    return color;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    vec2 jiggle = vec2(0.25);
+    vec3 color_sum = vec3(0.);
+    for (int sgn_x = 0; sgn_x < 2; sgn_x++) {
+        for (int sgn_y = 0; sgn_y < 2; sgn_y++) {
+            color_sum += raw_image(fragCoord + jiggle);
+            jiggle.y = -jiggle.y;
+        }
+        jiggle.x = -jiggle.x;
+    }
+    fragColor = vec4(0.25*color_sum, 1.);
 }
 
 /*void mainImage(out vec4 fragColor, in vec2 fragCoord) {
