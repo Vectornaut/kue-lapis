@@ -97,24 +97,18 @@ vec2 peirce_proj(vec2 zeta) {
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float small_dim = min(iResolution.x, iResolution.y);
-    vec2 p = 2.*(fragCoord - 0.5*iResolution.xy)/small_dim;
-    float t = mod(iTime, 12.);
-    if (t < 4.) {
-        p = 1.1*p;
-    } else if (t < 8.) {
-        p = vec2(1., 0.) + 0.01*p;
-    } else {
-        p = vec2(0., 1.) + 0.01*p;
-    }
-    
+    vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim;
     vec3 color = vec3(0.1);
-    if (dot(p, p) < 1.) {
-        vec2 z = peirce_proj(p) / (2.*K(SQRT_1_2)) + vec2(0.5);
-        float u = mod(iTime, 4.) < 2. ? z.x : z.y;
-        if (u < 0.05 || 0.95 < u) {
-            color = vec3(1.);
-        } else {
-            color = vec3(u, 0., 0.7);
+    
+    if (mod(iTime, 4.) < 2.) {
+        if (dot(p, p) < 1.) {
+            vec2 z = 0.5*(peirce_proj(p) + vec2(1.));
+            color = vec3(z.x, z.y, 0.7);
+        }
+    } else {
+        if (abs(p.x) + abs(p.y) < 1.) {
+            vec2 z = 0.5*(p + vec2(1.));
+            color = vec3(z.x, z.y, 0.7);
         }
     }
     fragColor = vec4(color, 1.);
