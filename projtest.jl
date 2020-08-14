@@ -57,18 +57,8 @@ end
 
 SQRT_1_2 = 1/sqrt(2);
 
-function get_angles(zeta)
-    angles = collect(acos.(reim(cn_coords(zeta))))
-    if real(zeta) > 0
-        angles[1] = pi - angles[1]
-    else
-        angles[1] = angles[1] - pi
-    end
-    if imag(zeta) < 0
-        angles[2] = -angles[2]
-    end
-    angles
-end
+get_angles(zeta) =
+  sign.(reim(conj(zeta))) .* ([pi, 0] - collect(acos.(reim(cn_coords(zeta)))))
 
 function my_peirce_proj(zeta, N = 12, use_taylor = true)
     angles = get_angles(zeta)
