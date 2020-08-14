@@ -64,7 +64,8 @@ vec2 cn_coords(vec2 zeta) {
 
 vec2 conj(vec2 z) { return vec2(z.x, -z.y); }
 
-vec2 peirce_proj(vec2 zeta) {
+vec2 peirce_proj(vec3 u) {
+    vec2 zeta = u.xy;
     vec2 raw_angles = acos(clamp(cn_coords(zeta), -1., 1.));
     vec2 angles = sign(conj(zeta)) * (vec2(PI, 0.) - raw_angles);
     return 0.5*vec2(F(angles.x, 0.5), F(angles.y, 0.5));
@@ -91,15 +92,38 @@ vec2 peirce_proj(vec2 zeta) {
     fragColor = vec4(color, 1.);
 }*/
 
+// --- euler angles ---
+
+mat3 rot_xy(float t) {
+    return mat3(
+         cos(t), sin(t), 0.0,
+        -sin(t), cos(t), 0.0,
+            0.0,    0.0, 1.0
+    );
+}
+
+mat3 rot_yz(float t) {
+    return mat3(
+        1.0,     0.0,    0.0,
+        0.0,  cos(t), sin(t),
+        0.0, -sin(t), cos(t)
+    );
+}
+
+// attitude = vec3(precession, nutation spin)
+mat3 euler_rot(vec3 attitude) {
+    return rot_xy(attitude[0]) * rot_yz(attitude[1]) * rot_xy(attitude[2]);
+}
+
 // --- pillowcase pattern ---
 
 vec3 stripe(vec2 z) {
-    float s = 4.*(z.y - z.x);
-    if (3. < abs(s)) {
+    float s = mod(8.*(z.y - z.x + 1.), 8.);
+    if (s < 1. || 7. < s) {
         return vec3(1.);
-    } else if (s < -1.) {
+    } else if (s < 3.) {
         return vec3(1., 0.2, 0.5);
-    } else if (s < 1.) {
+    } else if (s < 5.) {
         return vec3(1., 0.85, 0.);
     } else {
         return vec3(0.2, 0.5, 1.);
@@ -111,9 +135,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim;
     vec3 color = vec3(0.1);
     
-    if (mod(iTime, 4.) < 2.) {
-        if (dot(p, p) < 1.) {
-            color = stripe(peirce_proj(p)/K(0.5));
+    if (mod(iTime, 12.) < 10.) {
+        float r_sq = dot(p, p);
+        if (r_sq < 1.) {
+            mat3 orient = euler_rot(vec3(0., iTime, 0.));
+            vec3 u = orient * vec3(p, sqrt(1. - r_sq));
+            color = stripe(peirce_proj(u)/K(0.5));
         }
     } else {
         if (abs(p.x) + abs(p.y) < 1.) {
