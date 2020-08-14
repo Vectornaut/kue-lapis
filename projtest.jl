@@ -74,14 +74,14 @@ end
 
 function test_peirce_proj(dir = 1, N = 12, use_taylor = true)
     mesh = LinRange(-1, 1, 200)
-    my_z = [my_peirce_proj(dir*zeta, N, use_taylor) for zeta in mesh]
-    good_z = good_peirce_proj.(dir*mesh)
+    my_z = [my_peirce_proj(dir*zeta, N, use_taylor) for zeta in mesh] / my_K(1/sqrt(2), N, use_taylor)
+    good_z = good_peirce_proj.(dir*mesh) / K(1/2)
     x_plot = plot(
       mesh,
       [first.(my_z) first.(good_z)],
       linecolor = [RGB(0.5, 0, 0.5) RGB(1, 0.5, 0.8)],
       linestyle = [:solid :dash],
-      ylims = (-2, 2),
+      ylims = (-1, 1),
       legend = false
     )
     y_plot = plot(
@@ -89,7 +89,7 @@ function test_peirce_proj(dir = 1, N = 12, use_taylor = true)
       [last.(my_z), last.(good_z)],
       linecolor = [RGB(0, 0.5, 0) RGB(0.5, 1, 0)],
       linestyle = [:solid :dash],
-      ylims = (-2, 2),
+      ylims = (-1, 1),
       legend = false
     )
     plot(x_plot, y_plot, layout = (2, 1))
