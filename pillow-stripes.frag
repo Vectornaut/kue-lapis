@@ -70,7 +70,7 @@ vec2 peirce_proj(vec2 zeta) {
     return 0.5*vec2(F(angles.x, 0.5), F(angles.y, 0.5));
 }
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+/*void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 p = 2.*(fragCoord - 0.5*iResolution.xy)/iResolution.xy;
     vec2 zeta;
     if (mod(iTime, 4.) < 2.) {
@@ -89,23 +89,36 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
         color.y *= 0.5;
     }
     fragColor = vec4(color, 1.);
+}*/
+
+// --- pillowcase pattern ---
+
+vec3 stripe(vec2 z) {
+    float s = 4.*(z.y - z.x);
+    if (3. < abs(s)) {
+        return vec3(1.);
+    } else if (s < -1.) {
+        return vec3(1., 0.2, 0.5);
+    } else if (s < 1.) {
+        return vec3(1., 0.85, 0.);
+    } else {
+        return vec3(0.2, 0.5, 1.);
+    }
 }
 
-/*void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float small_dim = min(iResolution.x, iResolution.y);
     vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim;
     vec3 color = vec3(0.1);
     
     if (mod(iTime, 4.) < 2.) {
         if (dot(p, p) < 1.) {
-            vec2 z = 0.5*(peirce_proj(p)/K(0.5) + vec2(1.));
-            color = vec3(z.x, z.y, 0.7);
+            color = stripe(peirce_proj(p)/K(0.5));
         }
     } else {
         if (abs(p.x) + abs(p.y) < 1.) {
-            vec2 z = 0.5*(p + vec2(1.));
-            color = vec3(z.x, z.y, 0.7);
+            color = stripe(p);
         }
     }
     fragColor = vec4(color, 1.);
-}*/
+}
