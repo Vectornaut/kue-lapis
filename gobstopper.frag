@@ -74,7 +74,10 @@ vec2 peirce_proj(vec2 zeta) {
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 p = 2.*(fragCoord - 0.5*iResolution.xy)/iResolution.xy;
-    if (8.*p.y < F(1.5*PI*p.x, SQRT_1_2)) {
+    float cn_2y = cn_coords(vec2(p.x, 0.)).y;
+    if (1.001 < cn_2y) {
+        fragColor = vec4(1., 0., 0., 1.);
+    } else if (1. < cn_2y) {
         fragColor = vec4(0.6, 0.2, 0.9, 1.);
     } else {
         fragColor = vec4(1.);
