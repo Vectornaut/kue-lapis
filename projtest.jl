@@ -25,7 +25,7 @@ function RF(r, N, use_taylor)
     end
 end
 
-my_K(m, N, use_taylor) = RF([0, 1 - m, 1], N, use_taylor)
+my_K(m, N = 12, use_taylor = true) = RF([0, 1 - m, 1], N, use_taylor)
 
 function my_F(phi, m, N = 12, use_taylor = true)
     # phi = phi_tile*pi + phi_off, with phi_off in [-pi/2, pi/2]
@@ -67,6 +67,29 @@ function good_peirce_proj(zeta)
 end
 
 # --- test ---
+
+function test_equator(N = 12, use_taylor = true)
+    mesh = cis.(LinRange(-1, 1, 400))
+    my_z = [my_peirce_proj(zeta, N, use_taylor) for zeta in mesh] / my_K(0.5, N, use_taylor)
+    good_z = good_peirce_proj.(mesh) / K(0.5)
+    x_plot = plot(
+      mesh,
+      [first.(my_z) first.(good_z)],
+      linecolor = [RGB(0.5, 0, 0.5) RGB(1, 0.5, 0.8)],
+      linestyle = [:solid :dash],
+      ylims = (-1, 1),
+      legend = false
+    )
+    y_plot = plot(
+      mesh,
+      [last.(my_z), last.(good_z)],
+      linecolor = [RGB(0, 0.5, 0) RGB(0.5, 1, 0)],
+      linestyle = [:solid :dash],
+      ylims = (-1, 1),
+      legend = false
+    )
+    plot(x_plot, y_plot, layout = (2, 1))
+end
 
 function test_peirce_proj(dir = 1, N = 12, use_taylor = true)
     mesh = LinRange(-1, 1, 200)
