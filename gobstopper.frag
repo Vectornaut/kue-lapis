@@ -26,32 +26,24 @@ float RF(vec3 u) {
 }
 
 const float PI = 3.141592653589793;
-/*const float PI_2 = 1.5707963267948966;*/
 
 float K(float k) { return RF(vec3(0., 1. - k*k, 1.)); }
 
 float F(float phi, float k) {
-    // separate off complete quarter-periods
-    float n_halves = floor(phi/PI);
-    float phi_rem = phi - n_halves*PI;
-    float n_quarts = 2.*n_halves;
-    if (phi_rem > 0.5*PI) {
-        n_quarts += 1.;
-        phi_rem = PI - phi_rem;
-    }
+    // phi = phi_tile*pi + phi_off, with phi_off in [-pi/2, pi/2]
+    float phi_tile = round(phi/PI);
+    float phi_off = phi - phi_tile*PI;
     
-    // integrate over incomplete quarter-period
-    float c = cos(phi_rem);
-    float s = sin(phi_rem);
+    // integrate from zero to phi_tile*pi
+    float val_tile = (phi_tile == 0.) ? 0. : phi_tile * 2.*K(k);
+    
+    // integrate from phi_tile*pi to phi
+    float c = cos(phi_off);
+    float s = sin(phi_off);
     float ks = k*s;
-    float val = s * RF(vec3(c*c, 1. - ks*ks, 1.));
+    float val_off = s * RF(vec3(c*c, 1. - ks*ks, 1.));
     
-    // add complete quarter-periods if necessary
-    if (n_quarts != 0.) {
-        val += n_quarts * K(k);
-    }
-    
-    return val;
+    return val_tile + val_off;
 }
 
 // --- Peirce projection ---
@@ -73,8 +65,6 @@ vec2 cn_coords(vec2 zeta) {
 }
 
 const float SQRT_1_2 = 0.7071067811865475;
-/*const float K = 1.854074677301372;*/
-/*const float PI = 3.14159265358979;*/
 
 vec2 peirce_proj(vec2 zeta) {
     vec2 angles = acos(cn_coords(zeta));
@@ -83,8 +73,8 @@ vec2 peirce_proj(vec2 zeta) {
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-    vec2 p = fragCoord / iResolution.xy;
-    if (4.*p.y < F(PI*p.x, SQRT_1_2)) {
+    vec2 p = 2.*(fragCoord - 0.5*iResolution.xy)/iResolution.xy;
+    if (8.*p.y < F(1.5*PI*p.x, SQRT_1_2)) {
         fragColor = vec4(0.6, 0.2, 0.9, 1.);
     } else {
         fragColor = vec4(1.);

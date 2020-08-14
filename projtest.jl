@@ -25,11 +25,23 @@ function RF(u, N, use_taylor)
     end
 end
 
+my_K(k, N, use_taylor) = RF([0, 1 - k*k, 1], N, use_taylor)
+
 function my_F(phi, k, N = 12, use_taylor = true)
-    c = cos(phi)
-    s = sin(phi)
-    ks = k*s
-    return s * RF([c*c, 1 - ks*ks, 1], N, use_taylor)
+    # phi = phi_tile*pi + phi_off, with phi_off in [-pi/2, pi/2]
+    phi_tile = round(phi/pi);
+    phi_off = phi - phi_tile*pi;
+    
+    # integrate from zero to phi_tile*pi
+    val_tile = (phi_tile == 0) ? 0 : phi_tile * 2my_K(k, N, use_taylor);
+    
+    # integrate from phi_tile*pi to phi
+    c = cos(phi_off);
+    s = sin(phi_off);
+    ks = k*s;
+    val_off = s * RF([c*c, 1 - ks*ks, 1], N, use_taylor);
+    
+    return val_tile + val_off;
 end
 
 # --- Peirce projection
@@ -65,7 +77,7 @@ function test_peirce_proj(N = 12, use_taylor = true)
 end
 
 function test_F(N = 12, use_taylor = true)
-    mesh = LinRange(0, pi, 200)
+    mesh = LinRange(-3pi/2, 3pi/2, 600)
     my_z = [my_F(phi, 1/sqrt(2), N, use_taylor) for phi in mesh]
     good_z = [F(phi, 1/2) for phi in mesh]
     comparison = plot(mesh, [first.(my_z), real.(good_z)], legend = false)
