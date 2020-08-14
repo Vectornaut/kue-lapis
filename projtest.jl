@@ -7,16 +7,16 @@ C2 = 0.1;
 C3 = 3/44.;
 C4 = 1/14.;
 
-function RF(u, N, use_taylor)
+function RF(r, N, use_taylor)
     for n in 1:N
-        sqrt_u = sqrt.(u)
-        pair = sqrt_u .* sqrt_u[[2,3,1]]
+        sqrt_r = sqrt.(r)
+        pair = sqrt_r .* sqrt_r[[2,3,1]]
         lambda = pair[1] + pair[2] + pair[3]
-        u = 0.25*(u + fill(lambda, 3))
+        r = 0.25*(r + fill(lambda, 3))
     end
-    avg = (u[1] + u[2] + u[3])/3
+    avg = (r[1] + r[2] + r[3])/3
     if use_taylor
-        off = u - fill(avg, 3)
+        off = r - fill(avg, 3)
         e2 = off[1] * off[2] - off[3] * off[3]
         e3 = off[1] * off[2] * off[3]
         return (1 + (C1*e2 - C2 - C3*e3)*e2 + C4*e3) / sqrt(avg)
@@ -25,21 +25,19 @@ function RF(u, N, use_taylor)
     end
 end
 
-my_K(k, N, use_taylor) = RF([0, 1 - k*k, 1], N, use_taylor)
+my_K(m, N, use_taylor) = RF([0, 1 - m, 1], N, use_taylor)
 
-function my_F(phi, k, N = 12, use_taylor = true)
+function my_F(phi, m, N = 12, use_taylor = true)
     # phi = phi_tile*pi + phi_off, with phi_off in [-pi/2, pi/2]
     phi_tile = round(phi/pi);
     phi_off = phi - phi_tile*pi;
     
     # integrate from zero to phi_tile*pi
-    val_tile = (phi_tile == 0) ? 0 : phi_tile * 2my_K(k, N, use_taylor);
+    val_tile = (phi_tile == 0) ? 0 : phi_tile * 2my_K(m, N, use_taylor);
     
     # integrate from phi_tile*pi to phi
-    c = cos(phi_off);
-    s = sin(phi_off);
-    ks = k*s;
-    val_off = s * RF([c*c, 1 - ks*ks, 1], N, use_taylor);
+    u = cis(phi_off)
+    val_off = imag(u) * RF([real(u)*real(u), 1 - m*imag(u)*imag(u), 1], N, use_taylor);
     
     return val_tile + val_off;
 end
@@ -55,14 +53,12 @@ function cn_coords(zeta)
     return (r_sq - flip) / base + im*(base / (r_sq + flip))
 end
 
-SQRT_1_2 = 1/sqrt(2);
-
 get_angles(zeta) =
   sign.(reim(conj(zeta))) .* ([pi, 0] - collect(acos.(reim(cn_coords(zeta)))))
 
 function my_peirce_proj(zeta, N = 12, use_taylor = true)
     angles = get_angles(zeta)
-    return 0.5*[my_F(angles[1], SQRT_1_2, N, use_taylor), my_F(angles[2], SQRT_1_2, N, use_taylor)]
+    return 0.5*[my_F(angles[1], 0.5, N, use_taylor), my_F(angles[2], 0.5, N, use_taylor)]
 end
 
 function good_peirce_proj(zeta)
@@ -74,8 +70,8 @@ end
 
 function test_peirce_proj(dir = 1, N = 12, use_taylor = true)
     mesh = LinRange(-1, 1, 200)
-    my_z = [my_peirce_proj(dir*zeta, N, use_taylor) for zeta in mesh] / my_K(1/sqrt(2), N, use_taylor)
-    good_z = good_peirce_proj.(dir*mesh) / K(1/2)
+    my_z = [my_peirce_proj(dir*zeta, N, use_taylor) for zeta in mesh] / my_K(0.5, N, use_taylor)
+    good_z = good_peirce_proj.(dir*mesh) / K(0.5)
     x_plot = plot(
       mesh,
       [first.(my_z) first.(good_z)],
@@ -97,7 +93,7 @@ end
 
 function test_F(N = 12, use_taylor = true)
     mesh = LinRange(-3pi/2, 3pi/2, 600)
-    my_z = [my_F(phi, 1/sqrt(2), N, use_taylor) for phi in mesh]
+    my_z = [my_F(phi, 0.5, N, use_taylor) for phi in mesh]
     good_z = [F(phi, 1/2) for phi in mesh]
     comparison = plot(mesh, [first.(my_z), real.(good_z)], legend = false)
     crossover = plot(mesh, [cos.(mesh).^2, [1-0.5*sin(phi)^2 for phi in mesh]], legend = false)
