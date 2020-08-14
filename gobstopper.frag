@@ -78,13 +78,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     } else {
         zeta = vec2(0., p.x);
     }
-    vec2 z = peirce_proj(zeta);
+    vec2 z = peirce_proj(zeta)/K(0.5);
     vec3 color = vec3(1., 1., 1.);
-    if (2.*p.y < z.x) {
+    if (p.y < z.x) {
         color.y *= 0.2;
         color.z *= 0.5;
     }
-    if (2.*p.y < z.y) {
+    if (p.y < z.y) {
         color.x *= 0.2;
         color.y *= 0.5;
     }
