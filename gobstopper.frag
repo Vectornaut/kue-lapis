@@ -25,11 +25,33 @@ float RF(vec3 u) {
     return (1. + (C1*e2 - C2 - C3*e3)*e2 + C4*e3) / sqrt(avg);
 }
 
+const float PI = 3.141592653589793;
+/*const float PI_2 = 1.5707963267948966;*/
+
+float K(float k) { return RF(vec3(0., 1. - k*k, 1.)); }
+
 float F(float phi, float k) {
-    float c = cos(phi);
-    float s = sin(phi);
+    // separate off complete quarter-periods
+    float n_halves = floor(phi/PI);
+    float phi_rem = phi - n_halves*PI;
+    float n_quarts = 2.*n_halves;
+    if (phi_rem > 0.5*PI) {
+        n_quarts += 1.;
+        phi_rem = PI - phi_rem;
+    }
+    
+    // integrate over incomplete quarter-period
+    float c = cos(phi_rem);
+    float s = sin(phi_rem);
     float ks = k*s;
-    return s * RF(vec3(c*c, 1. - ks*ks, 1.));
+    float val = s * RF(vec3(c*c, 1. - ks*ks, 1.));
+    
+    // add complete quarter-periods if necessary
+    if (n_quarts != 0.) {
+        val += n_quarts * K(k);
+    }
+    
+    return val;
 }
 
 // --- Peirce projection ---
@@ -51,7 +73,7 @@ vec2 cn_coords(vec2 zeta) {
 }
 
 const float SQRT_1_2 = 0.7071067811865475;
-const float K = 1.854074677301372;
+/*const float K = 1.854074677301372;*/
 /*const float PI = 3.14159265358979;*/
 
 vec2 peirce_proj(vec2 zeta) {
@@ -61,12 +83,21 @@ vec2 peirce_proj(vec2 zeta) {
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    vec2 p = fragCoord / iResolution.xy;
+    if (4.*p.y < F(PI*p.x, SQRT_1_2)) {
+        fragColor = vec4(0.6, 0.2, 0.9, 1.);
+    } else {
+        fragColor = vec4(1.);
+    }
+}
+
+/*void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float small_dim = min(iResolution.x, iResolution.y);
     vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim;
     vec3 color = vec3(0.1);
     
     if (p.x > 0. && p.y > 0. && dot(p, p) < 1.) {
-        vec2 z = (2./K)*peirce_proj(p);
+        vec2 z = (2./K(SQRT_1_2))*peirce_proj(p);
         float u = mod(iTime, 4.) < 2. ? z.x : z.y;
         if (u < 0. || 1. < u) {
             color = vec3(1.);
@@ -75,4 +106,4 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
         }
     }
     fragColor = vec4(color, 1.);
-}
+}*/
