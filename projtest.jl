@@ -48,8 +48,8 @@ function cn_coords(zeta)
     x_sq = real(zeta) * real(zeta);
     y_sq = imag(zeta) * imag(zeta);
     r_sq = x_sq + y_sq;
-    base = 2*sqrt(1-r_sq) + x_sq - y_sq;
-    flip = 2*sqrt(1-r_sq + x_sq*y_sq);
+    base = 2*sqrt(max(1-r_sq, 0)) + x_sq - y_sq;
+    flip = 2*sqrt(max(1-r_sq, 0) + x_sq*y_sq);
     return (r_sq - flip) / base + im*(base / (r_sq + flip))
 end
 
@@ -69,9 +69,10 @@ end
 # --- test ---
 
 function test_equator(N = 12, use_taylor = true)
-    mesh = cis.(LinRange(-1, 1, 400))
-    my_z = [my_peirce_proj(zeta, N, use_taylor) for zeta in mesh] / my_K(0.5, N, use_taylor)
-    good_z = good_peirce_proj.(mesh) / K(0.5)
+    mesh = LinRange(0, 2pi, 400)
+    equator = cis.(mesh)
+    my_z = [my_peirce_proj(zeta, N, use_taylor) for zeta in equator] / my_K(0.5, N, use_taylor)
+    good_z = good_peirce_proj.(equator) / K(0.5)
     x_plot = plot(
       mesh,
       [first.(my_z) first.(good_z)],

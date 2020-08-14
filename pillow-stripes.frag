@@ -54,8 +54,8 @@ vec2 cn_coords(vec2 zeta) {
     float x_sq = zeta.x * zeta.x;
     float y_sq = zeta.y * zeta.y;
     float r_sq = x_sq + y_sq;
-    float base = 2.*sqrt(1.-r_sq) + x_sq - y_sq;
-    float flip = 2.*sqrt(1.-r_sq + x_sq*y_sq);
+    float base = 2.*sqrt(max(1.-r_sq, 0.)) + x_sq - y_sq;
+    float flip = 2.*sqrt(max(1.-r_sq, 0.) + x_sq*y_sq);
     return vec2(
         (r_sq - flip) / base,
         base / (r_sq + flip)
