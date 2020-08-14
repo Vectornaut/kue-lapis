@@ -96,33 +96,80 @@ mat3 euler_rot(vec3 attitude) {
 
 // --- pillowcase pattern ---
 
-vec3 stripe(vec2 z) {
-    float s = mod(8.*(z.y - z.x + 1.), 8.);
-    if (s < 1. || 7. < s) {
-        return vec3(1.);
-    } else if (s < 3.) {
-        return vec3(1., 0.2, 0.5);
-    } else if (s < 5.) {
-        return vec3(1., 0.85, 0.);
+
+const vec3 color_a = vec3(1., 0.4, 0.6);
+const vec3 color_b = vec3(1., 0.6, 0.6);
+const vec3 color_c = vec3(1.);
+const vec3 color_d = vec3(1., 0.75, 0.);
+const vec3 color_e = vec3(1., 0.6, 0.2);
+
+vec3 stripe(vec2 z, float sheet) {
+    float s;
+    if (sheet > 0.) {
+        s = 8.*(z.x + 1.);
+        if (s < 1.) {
+            return color_e;
+        } else if (s < 3.) {
+            return color_d;
+        } else if (s < 5.) {
+            return color_c;
+        } else if (s < 7.) {
+            return color_b;
+        } else if (s < 9.) {
+            return color_a;
+        } else if (s < 11.) {
+            return color_b;
+        } else if (s < 13.) {
+            return color_c;
+        } else if (s < 15.) {
+            return color_d;
+        } else {
+            return color_e;
+        }
     } else {
-        return vec3(0.2, 0.5, 1.);
+        s = 8.*(z.y + 1.);
+        if (s < 1.) {
+            return color_a;
+        } else if (s < 3.) {
+            return color_b;
+        } else if (s < 5.) {
+            return color_c;
+        } else if (s < 7.) {
+            return color_d;
+        } else if (s < 9.) {
+            return color_e;
+        } else if (s < 11.) {
+            return color_d;
+        } else if (s < 13.) {
+            return color_c;
+        } else if (s < 15.) {
+            return color_b;
+        } else {
+            return color_a;
+        }
     }
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float small_dim = min(iResolution.x, iResolution.y);
-    vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim - vec2(0.7, 0.);
+    vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim - vec2(0.8, 0.);
     vec3 color = vec3(0.1);
     
     float r_sq = dot(p, p);
     if (r_sq < 1.) {
         mat3 orient = euler_rot(vec3(0., iTime, 0.));
         vec3 u = orient * vec3(p, sqrt(1. - r_sq));
-        color = stripe(peirce_proj(u)/K(0.5));
+        color = stripe(peirce_proj(u)/K(0.5), u.z);
     } else {
-        vec2 p_mini = 2.*(p - vec2(-1.9, 0.));
+        vec2 p_mini = 2.*(p - vec2(-1.65, 0.25));
         if (abs(p_mini.x) + abs(p_mini.y) < 1.) {
-            color = stripe(p_mini);
+            color = stripe(p_mini, 1.);
+        }
+        
+        p_mini -= vec2(-1.);
+        mat2 unfold = mat2(0., -1., -1., 0.);
+        if (abs(p_mini.x) + abs(p_mini.y) < 1.) {
+            color = stripe(unfold * p_mini, -1.);
         }
     }
     fragColor = vec4(color, 1.);
