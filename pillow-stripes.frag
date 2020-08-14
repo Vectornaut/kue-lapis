@@ -132,19 +132,18 @@ vec3 stripe(vec2 z) {
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float small_dim = min(iResolution.x, iResolution.y);
-    vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim;
+    vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim - vec2(0.7, 0.);
     vec3 color = vec3(0.1);
     
-    if (mod(iTime, 12.) < 10.) {
-        float r_sq = dot(p, p);
-        if (r_sq < 1.) {
-            mat3 orient = euler_rot(vec3(0., iTime, 0.));
-            vec3 u = orient * vec3(p, sqrt(1. - r_sq));
-            color = stripe(peirce_proj(u)/K(0.5));
-        }
+    float r_sq = dot(p, p);
+    if (r_sq < 1.) {
+        mat3 orient = euler_rot(vec3(0., iTime, 0.));
+        vec3 u = orient * vec3(p, sqrt(1. - r_sq));
+        color = stripe(peirce_proj(u)/K(0.5));
     } else {
-        if (abs(p.x) + abs(p.y) < 1.) {
-            color = stripe(p);
+        vec2 p_mini = 2.*(p - vec2(-1.9, 0.));
+        if (abs(p_mini.x) + abs(p_mini.y) < 1.) {
+            color = stripe(p_mini);
         }
     }
     fragColor = vec4(color, 1.);
