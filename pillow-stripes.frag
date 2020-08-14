@@ -71,27 +71,6 @@ vec2 peirce_proj(vec3 u) {
     return 0.5*vec2(F(angles.x, 0.5), F(angles.y, 0.5));
 }
 
-/*void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-    vec2 p = 2.*(fragCoord - 0.5*iResolution.xy)/iResolution.xy;
-    vec2 zeta;
-    if (mod(iTime, 4.) < 2.) {
-        zeta = vec2(p.x, 0.);
-    } else {
-        zeta = vec2(0., p.x);
-    }
-    vec2 z = peirce_proj(zeta)/K(0.5);
-    vec3 color = vec3(1., 1., 1.);
-    if (p.y < z.x) {
-        color.y *= 0.2;
-        color.z *= 0.5;
-    }
-    if (p.y < z.y) {
-        color.x *= 0.2;
-        color.y *= 0.5;
-    }
-    fragColor = vec4(color, 1.);
-}*/
-
 // --- euler angles ---
 
 mat3 rot_xy(float t) {
@@ -119,18 +98,28 @@ mat3 euler_rot(vec3 attitude) {
 
 vec3 stripe(vec2 z) {
     float s = mod(8.*(z.y - z.x + 1.), 8.);
+    vec3 color;
     if (s < 1. || 7. < s) {
-        return vec3(1.);
+        color = vec3(1.);
     } else if (s < 3.) {
-        return vec3(1., 0.2, 0.5);
+        color = vec3(0.8);
     } else if (s < 5.) {
-        return vec3(1., 0.85, 0.);
+        color = vec3(0.7);
     } else {
-        return vec3(0.2, 0.5, 1.);
+        color = vec3(0.6);
     }
+    if (abs(z.x) < 0.001) {
+        color.y *= 0.2;
+        color.z *= 0.5;
+    }
+    if (abs(abs(z.y) - 1.) < 0.001) {
+        color.x *= 0.2;
+        color.y *= 0.5;
+    }
+    return color;
 }
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+/*void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float small_dim = min(iResolution.x, iResolution.y);
     vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim - vec2(0.7, 0.);
     vec3 color = vec3(0.1);
@@ -145,6 +134,22 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
         if (abs(p_mini.x) + abs(p_mini.y) < 1.) {
             color = stripe(p_mini);
         }
+    }
+    fragColor = vec4(color, 1.);
+}*/
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    vec2 p = 2.*(fragCoord - 0.5*iResolution.xy)/iResolution.xy;
+    vec2 zeta = 0.99999*vec2(cos(p.x*PI), sin(p.x*PI));
+    vec2 z = peirce_proj(vec3(zeta, 0.))/K(0.5);
+    vec3 color = vec3(1., 1., 1.);
+    if (p.y < z.x) {
+        color.y *= 0.2;
+        color.z *= 0.5;
+    }
+    if (p.y < z.y) {
+        color.x *= 0.2;
+        color.y *= 0.5;
     }
     fragColor = vec4(color, 1.);
 }
