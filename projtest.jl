@@ -57,23 +57,52 @@ end
 
 SQRT_1_2 = 1/sqrt(2);
 
+function get_angles(zeta)
+    angles = collect(acos.(reim(cn_coords(zeta))))
+    if real(zeta) > 0
+        angles[1] = pi - angles[1]
+    else
+        angles[1] = angles[1] - pi
+    end
+    if imag(zeta) < 0
+        angles[2] = -angles[2]
+    end
+    angles
+end
+
 function my_peirce_proj(zeta, N = 12, use_taylor = true)
-    angles = acos.(reim(cn_coords(zeta)))
-    return 0.5*[my_F(angles[1], SQRT_1_2, N, use_taylor), my_F(angles[2], SQRT_1_2, N, use_tayor)]
+    angles = get_angles(zeta)
+    return 0.5*[my_F(angles[1], SQRT_1_2, N, use_taylor), my_F(angles[2], SQRT_1_2, N, use_taylor)]
 end
 
 function good_peirce_proj(zeta)
-    angles = acos.(reim(cn_coords(zeta)))
+    angles = get_angles(zeta)
     return 0.5*[F(angles[1], 1/2), F(angles[2], 1/2)]
 end
 
 # --- test ---
 
-function test_peirce_proj(N = 12, use_taylor = true)
-    mesh = LinRange(0, 1, 200)
-    my_z = [my_peirce_proj(zeta, N, use_taylor) for zeta in mesh]
-    good_z = good_peirce_proj.(mesh)
-    plot(mesh, [first.(my_z), first.(good_z)], legend = false)
+function test_peirce_proj(dir = 1, N = 12, use_taylor = true)
+    mesh = LinRange(-1, 1, 200)
+    my_z = [my_peirce_proj(dir*zeta, N, use_taylor) for zeta in mesh]
+    good_z = good_peirce_proj.(dir*mesh)
+    x_plot = plot(
+      mesh,
+      [first.(my_z) first.(good_z)],
+      linecolor = [RGB(0.5, 0, 0.5) RGB(1, 0.5, 0.8)],
+      linestyle = [:solid :dash],
+      ylims = (-2, 2),
+      legend = false
+    )
+    y_plot = plot(
+      mesh,
+      [last.(my_z), last.(good_z)],
+      linecolor = [RGB(0, 0.5, 0) RGB(0.5, 1, 0)],
+      linestyle = [:solid :dash],
+      ylims = (-2, 2),
+      legend = false
+    )
+    plot(x_plot, y_plot, layout = (2, 1))
 end
 
 function test_F(N = 12, use_taylor = true)
