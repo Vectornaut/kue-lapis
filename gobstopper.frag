@@ -102,7 +102,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     
     if (mod(iTime, 4.) < 2.) {
         if (dot(p, p) < 1.) {
-            vec2 z = 0.5*(peirce_proj(p) + vec2(1.));
+            vec2 z = 0.5*(peirce_proj(p)/K(SQRT_1_2) + vec2(1.));
             color = vec3(z.x, z.y, 0.7);
         }
     } else {
