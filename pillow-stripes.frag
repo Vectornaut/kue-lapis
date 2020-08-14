@@ -96,12 +96,11 @@ mat3 euler_rot(vec3 attitude) {
 
 // --- pillowcase pattern ---
 
-
-const vec3 color_a = vec3(1., 0.4, 0.6);
-const vec3 color_b = vec3(1., 0.6, 0.6);
-const vec3 color_c = vec3(1.);
-const vec3 color_d = vec3(1., 0.75, 0.);
-const vec3 color_e = vec3(1., 0.6, 0.2);
+const vec3 color_a = vec3(1., 0.2, 0.5);
+const vec3 color_b = vec3(1., 0.45, 0.7);
+const vec3 color_c = vec3(1., 0.9, 0.95);
+const vec3 color_d = vec3(1., 0.64, 0.);
+const vec3 color_e = vec3(1., 0.45, 0.);
 
 vec3 stripe(vec2 z, float sheet) {
     float s;
@@ -153,11 +152,12 @@ vec3 stripe(vec2 z, float sheet) {
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float small_dim = min(iResolution.x, iResolution.y);
     vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim - vec2(0.8, 0.);
-    vec3 color = vec3(0.1);
+    vec3 color = vec3(0.1, 0.0, 0.2);
     
     float r_sq = dot(p, p);
     if (r_sq < 1.) {
-        mat3 orient = euler_rot(vec3(0., iTime, 0.));
+        vec3 attitude = iTime * vec3(1./(2.+PI), 1./2., 1./PI);
+        mat3 orient = euler_rot(attitude);
         vec3 u = orient * vec3(p, sqrt(1. - r_sq));
         color = stripe(peirce_proj(u)/K(0.5), u.z);
     } else {
