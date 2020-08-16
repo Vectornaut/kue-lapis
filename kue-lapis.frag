@@ -135,7 +135,7 @@ vec3 stripe(vec2 z, vec2 charge) {
     }
 }
 
-const vec2 charge = vec2(0., 2.);
+const vec2 charge = vec2(9., 5.);
 
 vec3 raw_image(vec2 fragCoord) {
     float small_dim = min(iResolution.x, iResolution.y);
