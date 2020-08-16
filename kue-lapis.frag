@@ -119,28 +119,23 @@ const vec3 color_c = vec3(1., 0.9, 0.95);
 const vec3 color_d = vec3(1., 0.64, 0.);
 const vec3 color_e = vec3(1., 0.45, 0.);
 
-vec3 stripe(vec2 z) {
-    float s = 8.*abs(z.x);
-    if (s < 1.) {
+vec3 stripe(vec2 z, vec2 charge) {
+    float s = 0.25 * dot(conj(charge), z.yx); // the signed area (1/4) * D(charge, z)
+    float s_off = 16.*abs(s - round(s)); // fold s into the fundamental domain [0, 8]
+    if (s_off < 1.) {
         return color_e;
-    } else if (s < 3.) {
+    } else if (s_off < 3.) {
         return color_d;
-    } else if (s < 5.) {
+    } else if (s_off < 5.) {
         return color_c;
-    } else if (s < 7.) {
+    } else if (s_off < 7.) {
         return color_b;
-    } else if (s < 9.) {
-        return color_a;
-    } else if (s < 11.) {
-        return color_b;
-    } else if (s < 13.) {
-        return color_c;
-    } else if (s < 15.) {
-        return color_d;
     } else {
-        return color_e;
+        return color_a;
     }
 }
+
+const vec2 charge = vec2(0., 2.);
 
 vec3 raw_image(vec2 fragCoord) {
     float small_dim = min(iResolution.x, iResolution.y);
@@ -152,12 +147,12 @@ vec3 raw_image(vec2 fragCoord) {
         vec3 attitude = iTime * vec3(1./(2.+PI), 1./2., 1./PI);
         mat3 orient = euler_rot(attitude);
         vec3 u = orient * vec3(p, sqrt(1. - r_sq));
-        color = stripe(peirce_proj(u));
+        color = stripe(peirce_proj(u), charge);
     } else {
         vec2 p_mini = 2.*(p - vec2(-2.15, 0.25));
         vec2 p_rect = mat2(1., 1., -1., 1.) * p_mini;
         if (0. < p_rect.x && p_rect.x < 2. && abs(p_rect.y) < 2.) {
-            color = stripe(p_mini);
+            color = stripe(p_mini, charge);
         }
     }
     return color;
