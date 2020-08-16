@@ -29,13 +29,14 @@ const float PI = 3.141592653589793;
 
 float K(float m) { return RF(vec3(0., 1. - m, 1.)); }
 
-float F(float phi, float m) {
+// to save work, we precompute K(m) and pass it as K_val
+float F(float phi, float m, float K_val) {
     // phi = phi_tile*pi + phi_off, with phi_off in [-pi/2, pi/2]
     float phi_tile = round(phi/PI);
     float phi_off = phi - phi_tile*PI;
     
     // integrate from zero to phi_tile*pi
-    float val_tile = (phi_tile == 0.) ? 0. : phi_tile * 2.*K(m);
+    float val_tile = phi_tile * 2.*K_val;
     
     // integrate from phi_tile*pi to phi
     vec2 u = vec2(cos(phi_off), sin(phi_off));
@@ -62,13 +63,29 @@ vec2 cn_coords(vec2 zeta) {
     );
 }
 
+const float K_1_2 = 1.854074677301372; // the quarter-period K(1/2)
+
 vec2 conj(vec2 z) { return vec2(z.x, -z.y); }
 
 vec2 peirce_proj(vec3 u) {
+    // map into the top-sheet diamond,
+    //
+    //           (1,  1)
+    //            .   .
+    //          .       .
+    //     (0,  0)     (2,  0)
+    //          .       .
+    //            .   .
+    //           (1, -1)
+    //
     vec2 zeta = u.xy;
     vec2 raw_angles = acos(clamp(cn_coords(zeta), -1., 1.));
     vec2 angles = sign(conj(zeta)) * (vec2(PI, 0.) - raw_angles);
-    return 0.5*vec2(F(angles.x, 0.5), F(angles.y, 0.5));
+    vec2 z = (0.5/K_1_2)*vec2(F(angles.x, 0.5, K_1_2), F(angles.y, 0.5, K_1_2)) + vec2(1., 0.);
+    
+    // if we're on the bottom sheet, reflect across the southwest edge of the
+    // top-sheet diamond
+    if (u.z > 0.) return z; else return -z.yx;
 }
 
 // --- euler angles ---
@@ -102,50 +119,26 @@ const vec3 color_c = vec3(1., 0.9, 0.95);
 const vec3 color_d = vec3(1., 0.64, 0.);
 const vec3 color_e = vec3(1., 0.45, 0.);
 
-vec3 stripe(vec2 z, float sheet) {
-    float s;
-    if (sheet > 0.) {
-        s = 8.*(z.x + 1.);
-        if (s < 1.) {
-            return color_e;
-        } else if (s < 3.) {
-            return color_d;
-        } else if (s < 5.) {
-            return color_c;
-        } else if (s < 7.) {
-            return color_b;
-        } else if (s < 9.) {
-            return color_a;
-        } else if (s < 11.) {
-            return color_b;
-        } else if (s < 13.) {
-            return color_c;
-        } else if (s < 15.) {
-            return color_d;
-        } else {
-            return color_e;
-        }
+vec3 stripe(vec2 z) {
+    float s = 8.*abs(z.x);
+    if (s < 1.) {
+        return color_e;
+    } else if (s < 3.) {
+        return color_d;
+    } else if (s < 5.) {
+        return color_c;
+    } else if (s < 7.) {
+        return color_b;
+    } else if (s < 9.) {
+        return color_a;
+    } else if (s < 11.) {
+        return color_b;
+    } else if (s < 13.) {
+        return color_c;
+    } else if (s < 15.) {
+        return color_d;
     } else {
-        s = 8.*(z.y + 1.);
-        if (s < 1.) {
-            return color_a;
-        } else if (s < 3.) {
-            return color_b;
-        } else if (s < 5.) {
-            return color_c;
-        } else if (s < 7.) {
-            return color_d;
-        } else if (s < 9.) {
-            return color_e;
-        } else if (s < 11.) {
-            return color_d;
-        } else if (s < 13.) {
-            return color_c;
-        } else if (s < 15.) {
-            return color_b;
-        } else {
-            return color_a;
-        }
+        return color_e;
     }
 }
 
@@ -159,17 +152,12 @@ vec3 raw_image(vec2 fragCoord) {
         vec3 attitude = iTime * vec3(1./(2.+PI), 1./2., 1./PI);
         mat3 orient = euler_rot(attitude);
         vec3 u = orient * vec3(p, sqrt(1. - r_sq));
-        color = stripe(peirce_proj(u)/K(0.5), u.z);
+        color = stripe(peirce_proj(u));
     } else {
-        vec2 p_mini = 2.*(p - vec2(-1.65, 0.25));
-        if (abs(p_mini.x) + abs(p_mini.y) < 1.) {
-            color = stripe(p_mini, 1.);
-        }
-        
-        p_mini -= vec2(-1.);
-        mat2 unfold = mat2(0., -1., -1., 0.);
-        if (abs(p_mini.x) + abs(p_mini.y) < 1.) {
-            color = stripe(unfold * p_mini, -1.);
+        vec2 p_mini = 2.*(p - vec2(-2.15, 0.25));
+        vec2 p_rect = mat2(1., 1., -1., 1.) * p_mini;
+        if (0. < p_rect.x && p_rect.x < 2. && abs(p_rect.y) < 2.) {
+            color = stripe(p_mini);
         }
     }
     return color;
