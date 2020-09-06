@@ -51,12 +51,13 @@ float F(float phi, float m, float K_val) {
 //     'A Quincuncial Projection of the sphere'
 // American Journal of Mathematics, vol. 18, no. 2, pp. 145--152, 1896
 
-vec2 cn_coords(vec2 zeta) {
-    float x_sq = zeta.x * zeta.x;
-    float y_sq = zeta.y * zeta.y;
+vec2 cn_coords(vec3 u) {
+    float x_sq = u.x * u.x;
+    float y_sq = u.y * u.y;
+    float z_sq = u.z * u.z;
     float r_sq = x_sq + y_sq;
-    float base = 2.*sqrt(max(1.-r_sq, 0.)) + x_sq - y_sq;
-    float flip = 2.*sqrt(max(1.-r_sq, 0.) + x_sq*y_sq);
+    float base = 2.*abs(u.z) + x_sq - y_sq;
+    float flip = 2.*sqrt(z_sq + x_sq*y_sq);
     return vec2(
         (r_sq - flip) / base,
         base / (r_sq + flip)
@@ -78,9 +79,8 @@ vec2 peirce_proj(vec3 u) {
     //            .   .
     //           (1, -1)
     //
-    vec2 zeta = u.xy;
-    vec2 raw_angles = acos(clamp(cn_coords(zeta), -1., 1.));
-    vec2 angles = sign(conj(zeta)) * (vec2(PI, 0.) - raw_angles);
+    vec2 raw_angles = acos(clamp(cn_coords(u), -1., 1.));
+    vec2 angles = sign(conj(u.xy)) * (vec2(PI, 0.) - raw_angles);
     vec2 z = (0.5/K_1_2)*vec2(F(angles.x, 0.5, K_1_2), F(angles.y, 0.5, K_1_2)) + vec2(1., 0.);
     
     // if we're on the bottom sheet, reflect across the southwest edge of the
