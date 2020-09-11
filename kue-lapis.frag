@@ -159,7 +159,7 @@ vec2 cacos(vec2 z) {
 
 vec2 peirce_proj(vec3 u) {
     // project stereographically onto the equatorial disk
-    vec2 zeta = u.xy / (1. - abs(u.z));
+    vec2 zeta = u.xy / (1. + abs(u.z));
     
     // map into the top-sheet diamond,
     //
@@ -209,7 +209,7 @@ const vec3 color_c = vec3(1., 0.9, 0.95);
 const vec3 color_d = vec3(1., 0.64, 0.);
 const vec3 color_e = vec3(1., 0.45, 0.);
 
-vec3 stripe(vec2 z, vec2 charge) {
+/*vec3 stripe(vec2 z, vec2 charge) {
     float s = 0.25 * dot(conj(charge), z.yx); // the signed area (1/4) * D(charge, z)
     float s_off = 16.*abs(s - round(s)); // fold s into the fundamental domain [0, 8]
     if (s_off < 1.) {
@@ -223,6 +223,34 @@ vec3 stripe(vec2 z, vec2 charge) {
     } else {
         return color_a;
     }
+}*/
+
+vec3 debug_stripe(vec2 z, vec2 charge) {
+    float s = 0.25 * dot(conj(charge), z.yx); // the signed area (1/4) * D(charge, z)
+    float s_off = 16.*abs(s - round(s)); // fold s into the fundamental domain [0, 8]
+    vec3 color;
+    if (s_off < 1.) {
+        color = color_e;
+    } else if (s_off < 3.) {
+        color = color_d;
+    } else if (s_off < 5.) {
+        color = color_c;
+    } else if (s_off < 7.) {
+        color = color_b;
+    } else {
+        color = color_a;
+    }
+    if (z.x + z.y > 1.95) {
+        color = mix(color, vec3(1., 1., 0.), 0.5);
+    } else if (z.x + z.y < -1.95) {
+        color = mix(color, vec3(0., 0., 1.), 0.5);
+    }
+    if (z.x - z.y < 0.05) {
+      color = mix(color, vec3(0., 1., 0.), 0.5);
+    } else if (z.x - z.y > 1.95) {
+      color = mix(color, vec3(1., 0., 0.), 0.5);
+    }
+    return color;
 }
 
 const vec2 charge = vec2(1., 2.);
@@ -237,15 +265,12 @@ vec3 raw_image(vec2 fragCoord) {
         vec3 attitude = iTime * vec3(1./(2.+PI), 1./2., 1./PI);
         mat3 orient = euler_rot(attitude);
         vec3 u = orient * vec3(p, sqrt(1. - r_sq));
-        color = stripe(peirce_proj(u), charge);
-        if (u.x > 0.) {
-          color *= 0.5;
-        }
+        color = debug_stripe(peirce_proj(u), charge);
     } else {
         vec2 p_mini = 2.*(p - vec2(-2.15, 0.25));
         vec2 p_rect = mat2(1., 1., -1., 1.) * p_mini;
         if (0. < p_rect.x && p_rect.x < 2. && abs(p_rect.y) < 2.) {
-            color = stripe(p_mini, charge);
+            color = debug_stripe(p_mini, charge);
         }
     }
     return color;
