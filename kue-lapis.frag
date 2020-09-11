@@ -171,7 +171,7 @@ vec2 peirce_proj(vec3 u) {
     //            .   .
     //           (1, -1)
     //
-    vec2 z = F(cacos(-zeta), 0.5*ONE, K_1_2*ONE);
+    vec2 z = F(cacos(-zeta), 0.5*ONE, K_1_2*ONE) / K_1_2;
     
     // if we're on the bottom sheet, reflect across the southwest edge of the
     // top-sheet diamond
@@ -253,7 +253,7 @@ vec3 debug_stripe(vec2 z, vec2 charge) {
     return color;
 }
 
-const vec2 charge = vec2(1., 2.);
+const vec2 charge = vec2(1., 3.);
 
 vec3 raw_image(vec2 fragCoord) {
     float small_dim = min(iResolution.x, iResolution.y);
