@@ -44,10 +44,15 @@ function my_F(phi, m, N = 12, use_taylor = true)
     val_tile = (phi_tile == 0) ? 0 : phi_tile * 2my_K(m, N, use_taylor);
     
     # integrate from phi_tile*pi to phi
-    u = [cos(phi_off), sin(phi_off)]
-    val_off = u[2] * RF([u[1]*u[1], 1 - m*u[2]*u[2], 1], N, use_taylor);
-    ##c = 1/u[2]/u[2]
-    ##val_off = RF([c-1, c-m, c], N, use_taylor)
+    s = sin(phi_off)
+    s_sq = s*s
+    val_off = s * RF([1 - s_sq, 1 - m*s_sq, 1], N, use_taylor);
+    
+    ### this version might be a bit slower in GLSL because of the extra
+    ### conditional in `sign`
+    ##c = 1/sin(phi_off)
+    ##c *= c
+    ##val_off = sign(real(phi_off)) * RF([c-1, c-m, c], N, use_taylor)
     
     return val_tile + val_off;
 end
