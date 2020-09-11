@@ -96,6 +96,43 @@ vec2 F(vec2 phi, vec2 m, vec2 K_val) {
     return val_tile + val_off;
 }
 
+//// ~~~ old elliptic integrals
+
+const float OLD_C1 = 1./24.;
+const float OLD_C2 = 0.1;
+const float OLD_C3 = 3./44.;
+const float OLD_C4 = 1./14.;
+
+float old_RF(vec3 r) {
+    for (int n = 0; n < N; n++) {
+      vec3 sqrt_r = sqrt(r);
+      vec3 pair = sqrt_r * sqrt_r.yzx;
+      float lambda = pair.x + pair.y + pair.z;
+      r = 0.25*(r + vec3(lambda));
+    }
+    float avg = (r.x + r.y + r.z)/3.;
+    vec3 off = r - vec3(avg);
+    float e2 = off.x * off.y - off.z * off.z;
+    float e3 = off.x * off.y * off.z;
+    return (1. + (OLD_C1*e2 - OLD_C2 - OLD_C3*e3)*e2 + OLD_C4*e3) / sqrt(avg);
+}
+
+// to save work, we precompute K(m) and pass it as K_val
+float old_F(float phi, float m, float K_val) {
+    // phi = phi_tile*pi + phi_off, with phi_off in [-pi/2, pi/2]
+    float phi_tile = round(phi/PI);
+    float phi_off = phi - phi_tile*PI;
+    
+    // integrate from zero to phi_tile*pi
+    float val_tile = phi_tile * 2.*K_val;
+    
+    // integrate from phi_tile*pi to phi
+    vec2 u = vec2(cos(phi_off), sin(phi_off));
+    float val_off = u.y * old_RF(vec3(u.x*u.x, 1. - m*u.y*u.y, 1.));
+    
+    return val_tile + val_off;
+}
+
 // --- Peirce projection ---
 //
 // James Pierpont, "Note on C. S. Peirce's paper on
@@ -119,7 +156,7 @@ vec2 cn_coords(vec3 u) {
 
 const float K_1_2 = 1.854074677301372; // the quarter-period K(1/2)
 
-/*vec2 old_peirce_proj(vec3 u) {
+vec2 old_peirce_proj(vec3 u) {
     // map into the top-sheet diamond,
     //
     //           (1,  1)
@@ -137,7 +174,7 @@ const float K_1_2 = 1.854074677301372; // the quarter-period K(1/2)
     // if we're on the bottom sheet, reflect across the southwest edge of the
     // top-sheet diamond
     if (u.z > 0.) return z; else return -z.yx;
-}*/
+}
 
 //// ~~~ new version
 
@@ -209,7 +246,7 @@ const vec3 color_c = vec3(1., 0.9, 0.95);
 const vec3 color_d = vec3(1., 0.64, 0.);
 const vec3 color_e = vec3(1., 0.45, 0.);
 
-/*vec3 stripe(vec2 z, vec2 charge) {
+vec3 stripe(vec2 z, vec2 charge) {
     float s = 0.25 * dot(conj(charge), z.yx); // the signed area (1/4) * D(charge, z)
     float s_off = 16.*abs(s - round(s)); // fold s into the fundamental domain [0, 8]
     if (s_off < 1.) {
@@ -223,7 +260,7 @@ const vec3 color_e = vec3(1., 0.45, 0.);
     } else {
         return color_a;
     }
-}*/
+}
 
 vec3 debug_stripe(vec2 z, vec2 charge) {
     float s = 0.25 * dot(conj(charge), z.yx); // the signed area (1/4) * D(charge, z)
@@ -246,9 +283,9 @@ vec3 debug_stripe(vec2 z, vec2 charge) {
         color = mix(color, vec3(0., 0., 1.), 0.5);
     }
     if (z.x - z.y < 0.05) {
-      color = mix(color, vec3(0., 1., 0.), 0.5);
+      color = mix(color, vec3(0.25, 1., 0.), 0.5);
     } else if (z.x - z.y > 1.95) {
-      color = mix(color, vec3(1., 0., 0.), 0.5);
+      color = mix(color, vec3(0., 0.75, 1.), 0.5);
     }
     return color;
 }
@@ -262,10 +299,32 @@ vec3 raw_image(vec2 fragCoord) {
     
     float r_sq = dot(p, p);
     if (r_sq < 1.) {
-        vec3 attitude = iTime * vec3(1./(2.+PI), 1./2., 1./PI);
+        /*vec3 attitude = iTime * vec3(1./(2.+PI), 1./2., 1./PI);*/
+        vec3 attitude;
+        float big_t = mod(iTime, 80.);
+        vec3 ang_vel = 0.5*PI*vec3(1./5., 1./2., 2./5.);
+        if (big_t < 10. || 50. < big_t) {
+            attitude = iTime * ang_vel;
+        } else {
+            attitude = 10.*ang_vel;
+        }
         mat3 orient = euler_rot(attitude);
         vec3 u = orient * vec3(p, sqrt(1. - r_sq));
-        color = debug_stripe(peirce_proj(u), charge);
+        vec2 z;
+        float t = mod(iTime, 4.);
+        if (t < 2.) {
+            if (t < 1. || 3. < t) {
+                color = stripe(old_peirce_proj(u), charge);
+            } else {
+                color = debug_stripe(old_peirce_proj(u), charge);
+            }
+        } else {
+            if (t < 1. || 3. < t) {
+                color = stripe(peirce_proj(u), charge);
+            } else {
+                color = debug_stripe(peirce_proj(u), charge);
+            }
+        }
     } else {
         vec2 p_mini = 2.*(p - vec2(-2.15, 0.25));
         vec2 p_rect = mat2(1., 1., -1., 1.) * p_mini;
