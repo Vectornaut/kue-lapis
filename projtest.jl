@@ -59,31 +59,34 @@ end
 
 # --- Peirce projection
 
-function cn_coords(zeta)
-    x_sq = real(zeta) * real(zeta);
-    y_sq = imag(zeta) * imag(zeta);
-    r_sq = x_sq + y_sq;
-    base = 2*sqrt(max(1-r_sq, 0)) + x_sq - y_sq;
-    flip = 2*sqrt(max(1-r_sq, 0) + x_sq*y_sq);
-    return (r_sq - flip) / base + im*(base / (r_sq + flip))
+function cn_coords(u)
+    x_sq = u[1] * u[1]
+    y_sq = u[2] * u[2]
+    z_sq = u[3] * u[3]
+    r_sq = x_sq + y_sq
+    base = base = 2*abs(u[3]) + x_sq - y_sq
+    flip = 2*sqrt(z_sq + x_sq*y_sq)
+    return [
+        (r_sq - flip) / base,
+        base / (r_sq + flip)
+    ]
 end
 
-get_angles(zeta) =
-  sign.(reim(conj(zeta))) .* ([pi, 0] - collect(acos.(reim(cn_coords(zeta)))))
+get_angles(u) = [sign(u[1]), -sign(u[2])] .* ([pi, 0] - acos.(cn_coords(u)))
 
-function my_peirce_proj(zeta, N = 12, use_taylor = true)
-    angles = get_angles(zeta)
-    return 0.5*real.([my_F(angles[1], 0.5, N, use_taylor), my_F(angles[2], 0.5, N, use_taylor)])
+function good_peirce_proj(u)
+    angles = get_angles(u)
+    return 0.5*complex(F(angles[1], 1/2), F(angles[2], 1/2))
 end
 
-function cpx_peirce_proj(zeta, N = 12, use_taylor = true)
-    stereo_zeta = zeta / (1 + sqrt(max(1 - abs2(zeta), 0)))
-    return my_F(acos(-stereo_zeta), 0.5, N, use_taylor)
+function my_peirce_proj(u, N = 12, use_taylor = true)
+    angles = get_angles(u)
+    return 0.5*(my_F(angles[1], 0.5, N, use_taylor) + im*my_F(angles[2], 0.5, N, use_taylor))
 end
 
-function good_peirce_proj(zeta)
-    angles = get_angles(zeta)
-    return 0.5*[F(angles[1], 1/2), F(angles[2], 1/2)]
+function cpx_peirce_proj(u, N = 12, use_taylor = true)
+    zeta = complex(u[[1, 2]]...) / (1 - u[3])
+    return my_F(acos(-zeta), 0.5, N, use_taylor)
 end
 
 # --- complexified cn (for testing) ---
@@ -104,60 +107,6 @@ function cn(u::Complex, m::Real)
 end
 
 # --- test ---
-
-function test_equator(N = 12, use_taylor = true)
-    mesh = LinRange(0, 2pi, 400)
-    equator = cis.(mesh)
-    ##my_z = [my_peirce_proj(zeta, N, use_taylor) for zeta in equator] / real(my_K(0.5, N, use_taylor))
-    my_z = [cpx_peirce_proj(zeta, N, use_taylor) for zeta in equator]  / real(my_K(0.5, N, use_taylor))
-    good_z = good_peirce_proj.(equator) / K(0.5)
-    x_plot = plot(
-      mesh,
-      ##[first.(my_z) first.(good_z)],
-      [real.(my_z) first.(good_z) .+ 1],
-      linecolor = [RGB(0.5, 0, 0.5) RGB(1, 0.5, 0.8)],
-      linestyle = [:solid :dash],
-      ylims = (0, 2),
-      legend = false
-    )
-    y_plot = plot(
-      mesh,
-      ##[last.(my_z), last.(good_z)],
-      [imag.(my_z), last.(good_z)],
-      linecolor = [RGB(0, 0.5, 0) RGB(0.5, 1, 0)],
-      linestyle = [:solid :dash],
-      ylims = (-1, 1),
-      legend = false
-    )
-    plot(x_plot, y_plot, layout = (2, 1))
-end
-
-function test_peirce_proj(dir = 1, N = 12, use_taylor = true)
-    mesh = LinRange(-1, 1, 200)
-    ##my_z = [my_peirce_proj(dir*zeta, N, use_taylor) for zeta in mesh] / real(my_K(0.5, N, use_taylor))
-    my_z = [cpx_peirce_proj(dir*zeta, N, use_taylor) for zeta in mesh]  / real(my_K(0.5, N, use_taylor))
-    good_z = good_peirce_proj.(dir*mesh) / K(0.5)
-    x_plot = plot(
-      mesh,
-      ##[first.(my_z) first.(good_z)],
-      [real.(my_z) first.(good_z) .+ 1],
-      linecolor = [RGB(0.5, 0, 0.5) RGB(1, 0.5, 0.8)],
-      linestyle = [:solid :dash],
-      ##ylims = (-1, 1),
-      ylims = (0, 2),
-      legend = false
-    )
-    y_plot = plot(
-      mesh,
-      ##[last.(my_z), last.(good_z)],
-      [imag.(my_z), last.(good_z)],
-      linecolor = [RGB(0, 0.5, 0) RGB(0.5, 1, 0)],
-      linestyle = [:solid :dash],
-      ylims = (-1, 1),
-      legend = false
-    )
-    plot(x_plot, y_plot, layout = (2, 1))
-end
 
 function test_sqrt()
     ax_mesh = LinRange(-2, 2, 6)
@@ -207,5 +156,61 @@ end
 function test_inverse(N = 12, use_taylor = true)
     ax_mesh = K(0.5)*LinRange(0, 1, 5)
     mesh = [r*(1+im) + s*(1-im) for r in reverse(ax_mesh), s in ax_mesh]
-    [z - my_F(acos(cn(z, 0.5)), N, use_taylor) for z in mesh]
+    [z - my_F(acos(cn(z, 0.5)), 0.5, N, use_taylor) for z in mesh]
+end
+
+function test_peirce_proj(long = 0, N = 12, use_taylor = true; use_complex = true)
+    mesh = LinRange(-pi, 0, 200)
+    longline = [[cos(long)*cos(lat), sin(long)*cos(lat), sin(lat)] for lat in mesh]
+    good_z = 1 .+ good_peirce_proj.(longline) / K(0.5)
+    if use_complex
+        my_z = [cpx_peirce_proj(u, N, use_taylor) for u in longline]  / real(my_K(0.5, N, use_taylor))
+    else
+        my_z = 1 .+ [my_peirce_proj(u, N, use_taylor) for u in longline] / real(my_K(0.5, N, use_taylor))
+    end
+    x_plot = plot(
+      mesh,
+      [real.(my_z) real.(good_z)],
+      linecolor = [RGB(0.5, 0, 0.5) RGB(1, 0.5, 0.8)],
+      linestyle = [:solid :dash],
+      ylims = (0, 2),
+      legend = false
+    )
+    y_plot = plot(
+      mesh,
+      [imag.(my_z), imag.(good_z)],
+      linecolor = [RGB(0, 0.5, 0) RGB(0.5, 1, 0)],
+      linestyle = [:solid :dash],
+      ylims = (-1, 1),
+      legend = false
+    )
+    plot(x_plot, y_plot, layout = (2, 1))
+end
+
+function test_equator(N = 12, use_taylor = true; use_complex = true)
+    mesh = LinRange(0, 2pi, 400)
+    equator = [[cos(t), sin(t), 0] for t in mesh]
+    good_z = 1 .+ good_peirce_proj.(equator) / K(0.5)
+    if use_complex
+        my_z = [cpx_peirce_proj(u, N, use_taylor) for u in equator]  / real(my_K(0.5, N, use_taylor))
+    else
+        my_z = 1 .+ [complex(my_peirce_proj(u, N, use_taylor)...) for u in equator] / real(my_K(0.5, N, use_taylor))
+    end
+    x_plot = plot(
+      mesh,
+      [real.(my_z) real.(good_z)],
+      linecolor = [RGB(0.5, 0, 0.5) RGB(1, 0.5, 0.8)],
+      linestyle = [:solid :dash],
+      ylims = (0, 2),
+      legend = false
+    )
+    y_plot = plot(
+      mesh,
+      [imag.(my_z), imag.(good_z)],
+      linecolor = [RGB(0, 0.5, 0) RGB(0.5, 1, 0)],
+      linestyle = [:solid :dash],
+      ylims = (-1, 1),
+      legend = false
+    )
+    plot(x_plot, y_plot, layout = (2, 1))
 end
