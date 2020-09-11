@@ -77,7 +77,8 @@ function my_peirce_proj(zeta, N = 12, use_taylor = true)
 end
 
 function cpx_peirce_proj(zeta, N = 12, use_taylor = true)
-    return my_F(acos(zeta), 0.5, N, use_taylor)
+    stereo_zeta = zeta / (1 + sqrt(max(1 - abs2(zeta), 0)))
+    return my_F(acos(-stereo_zeta), 0.5, N, use_taylor)
 end
 
 function good_peirce_proj(zeta)
@@ -113,10 +114,10 @@ function test_equator(N = 12, use_taylor = true)
     x_plot = plot(
       mesh,
       ##[first.(my_z) first.(good_z)],
-      [real.(my_z) first.(good_z)],
+      [real.(my_z) first.(good_z) .+ 1],
       linecolor = [RGB(0.5, 0, 0.5) RGB(1, 0.5, 0.8)],
       linestyle = [:solid :dash],
-      ylims = (-1, 1),
+      ylims = (0, 2),
       legend = false
     )
     y_plot = plot(
@@ -139,10 +140,11 @@ function test_peirce_proj(dir = 1, N = 12, use_taylor = true)
     x_plot = plot(
       mesh,
       ##[first.(my_z) first.(good_z)],
-      [real.(my_z) first.(good_z)],
+      [real.(my_z) first.(good_z) .+ 1],
       linecolor = [RGB(0.5, 0, 0.5) RGB(1, 0.5, 0.8)],
       linestyle = [:solid :dash],
-      ylims = (-1, 1),
+      ##ylims = (-1, 1),
+      ylims = (0, 2),
       legend = false
     )
     y_plot = plot(
@@ -205,5 +207,5 @@ end
 function test_inverse(N = 12, use_taylor = true)
     ax_mesh = K(0.5)*LinRange(0, 1, 5)
     mesh = [r*(1+im) + s*(1-im) for r in reverse(ax_mesh), s in ax_mesh]
-    [z - cpx_peirce_proj(cn(z, 0.5), N, use_taylor) for z in mesh]
+    [z - my_F(acos(cn(z, 0.5)), N, use_taylor) for z in mesh]
 end
