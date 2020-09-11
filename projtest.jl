@@ -1,5 +1,12 @@
 using Elliptic, Plots
 
+# --- square root ---
+
+function my_sqrt(t)
+    r = abs(t)
+    return sqrt(0.5*(r + real(t))) + im*sqrt(0.5*(r - real(t)))
+end
+
 # --- elliptic integral of the first kind ---
 
 C1 = 1/24.;
@@ -9,7 +16,7 @@ C4 = 1/14.;
 
 function RF(r, N, use_taylor)
     for n in 1:N
-        sqrt_r = sqrt.(r)
+        sqrt_r = my_sqrt.(r)
         pair = sqrt_r .* sqrt_r[[2,3,1]]
         lambda = pair[1] + pair[2] + pair[3]
         r = 0.25*(r + fill(lambda, 3))
@@ -19,25 +26,28 @@ function RF(r, N, use_taylor)
         off = r - fill(avg, 3)
         e2 = off[1] * off[2] - off[3] * off[3]
         e3 = off[1] * off[2] * off[3]
-        return (1 + (C1*e2 - C2 - C3*e3)*e2 + C4*e3) / sqrt(avg)
+        return (1 + (C1*e2 - C2 - C3*e3)*e2 + C4*e3) / my_sqrt(avg)
     else
-        return 1/sqrt(avg)
+        return 1/my_sqrt(avg)
     end
 end
 
 my_K(m, N = 12, use_taylor = true) = RF([0, 1 - m, 1], N, use_taylor)
 
 function my_F(phi, m, N = 12, use_taylor = true)
-    # phi = phi_tile*pi + phi_off, with phi_off in [-pi/2, pi/2]
-    phi_tile = round(phi/pi);
+    # phi = phi_tile*pi + phi_off, where phi_tile is an integer and
+    # real(phi_off) is in [-pi/2, pi/2]
+    phi_tile = round(real(phi)/pi);
     phi_off = phi - phi_tile*pi;
     
     # integrate from zero to phi_tile*pi
     val_tile = (phi_tile == 0) ? 0 : phi_tile * 2my_K(m, N, use_taylor);
     
     # integrate from phi_tile*pi to phi
-    u = cis(phi_off)
-    val_off = imag(u) * RF([real(u)*real(u), 1 - m*imag(u)*imag(u), 1], N, use_taylor);
+    u = [cos(phi_off), sin(phi_off)]
+    val_off = u[2] * RF([u[1]*u[1], 1 - m*u[2]*u[2], 1], N, use_taylor);
+    ##c = 1/u[2]/u[2]
+    ##val_off = RF([c-1, c-m, c], N, use_taylor)
     
     return val_tile + val_off;
 end
@@ -115,11 +125,24 @@ function test_peirce_proj(dir = 1, N = 12, use_taylor = true)
     plot(x_plot, y_plot, layout = (2, 1))
 end
 
-function test_F(N = 12, use_taylor = true)
+function test_F(y = 0, N = 12, use_taylor = true)
     mesh = LinRange(-3pi/2, 3pi/2, 600)
-    my_z = [my_F(phi, 0.5, N, use_taylor) for phi in mesh]
+    my_z = [my_F(phi + im*y, 0.5, N, use_taylor) for phi in mesh]
     good_z = [F(phi, 1/2) for phi in mesh]
-    comparison = plot(mesh, [first.(my_z), real.(good_z)], legend = false)
+    comparison = plot(
+        mesh,
+        [real.(my_z), good_z],
+        linecolor = [RGB(0.5, 0, 0.5) RGB(1, 0.5, 0.8)],
+        linestyle = [:solid :dash],
+        legend = false
+    )
+    plot!(
+        comparison,
+        mesh,
+        [imag.(my_z), imag.(good_z)],
+        linecolor = [RGB(0, 0.5, 0) RGB(0.5, 1, 0)],
+        linestyle = [:solid :dash]
+    )
     crossover = plot(mesh, [cos.(mesh).^2, [1-0.5*sin(phi)^2 for phi in mesh]], legend = false)
     plot(comparison, crossover, layout = (2, 1))
 end
