@@ -4,7 +4,7 @@ using Elliptic, Plots
 
 function my_sqrt(t)
     r = abs(t)
-    return sqrt(0.5*(r + real(t))) + im*sqrt(0.5*(r - real(t)))
+    return sqrt(0.5*(r + real(t))) + im*sign(imag(t))*sqrt(0.5*(r - real(t)))
 end
 
 # --- elliptic integral of the first kind ---
@@ -130,7 +130,7 @@ function test_sqrt()
     [my_sqrt(x+im*y) - sqrt(x+im*y) for y in reverse(mesh), x in mesh]
 end
 
-# test values from section 3 of
+# check values from section 3 of
 #
 #   B. C. Carlson, "Numerical computation of real or complex elliptic integrals"
 #   Numerical Algorithms, vol. 10, pp. 13--26, 1995
