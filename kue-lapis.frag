@@ -225,7 +225,7 @@ vec3 stripe(vec2 z, vec2 charge) {
     }
 }
 
-const vec2 charge = vec2(9., 5.);
+const vec2 charge = vec2(1., 2.);
 
 vec3 raw_image(vec2 fragCoord) {
     float small_dim = min(iResolution.x, iResolution.y);
@@ -238,6 +238,9 @@ vec3 raw_image(vec2 fragCoord) {
         mat3 orient = euler_rot(attitude);
         vec3 u = orient * vec3(p, sqrt(1. - r_sq));
         color = stripe(peirce_proj(u), charge);
+        if (u.x > 0.) {
+          color *= 0.5;
+        }
     } else {
         vec2 p_mini = 2.*(p - vec2(-2.15, 0.25));
         vec2 p_rect = mat2(1., 1., -1., 1.) * p_mini;
