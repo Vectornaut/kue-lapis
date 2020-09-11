@@ -9,10 +9,10 @@ end
 
 # --- elliptic integral of the first kind ---
 
-C1 = 1/24.;
-C2 = 0.1;
-C3 = 3/44.;
-C4 = 1/14.;
+C1 = 1/24.
+C2 = 0.1
+C3 = 3/44.
+C4 = 1/14.
 
 function RF(r, N, use_taylor)
     for n in 1:N
@@ -37,16 +37,16 @@ my_K(m, N = 12, use_taylor = true) = RF([0, 1 - m, 1], N, use_taylor)
 function my_F(phi, m, N = 12, use_taylor = true)
     # phi = phi_tile*pi + phi_off, where phi_tile is an integer and
     # real(phi_off) is in [-pi/2, pi/2]
-    phi_tile = round(real(phi)/pi);
-    phi_off = phi - phi_tile*pi;
+    phi_tile = round(real(phi)/pi)
+    phi_off = phi - phi_tile*pi
     
     # integrate from zero to phi_tile*pi
-    val_tile = (phi_tile == 0) ? 0 : phi_tile * 2my_K(m, N, use_taylor);
+    val_tile = (phi_tile == 0) ? 0 : phi_tile * 2my_K(m, N, use_taylor)
     
     # integrate from phi_tile*pi to phi
     s = sin(phi_off)
     s_sq = s*s
-    val_off = s * RF([1 - s_sq, 1 - m*s_sq, 1], N, use_taylor);
+    val_off = s * RF([1 - s_sq, 1 - m*s_sq, 1], N, use_taylor)
     
     ### this version might be a bit slower in GLSL because of the extra
     ### conditional in `sign`
@@ -54,7 +54,7 @@ function my_F(phi, m, N = 12, use_taylor = true)
     ##c *= c
     ##val_off = sign(real(phi_off)) * RF([c-1, c-m, c], N, use_taylor)
     
-    return val_tile + val_off;
+    return val_tile + val_off
 end
 
 # --- Peirce projection
@@ -96,14 +96,14 @@ rot_sn(u::Real, m::Real) = Jacobi.sc(u, 1-m)*im
 rot_dn(u::Real, m::Real) = Jacobi.dc(u, 1-m)
 
 function cn(u::Complex, m::Real)
-  x = real(u)
-  y = imag(u)
-  
-  cn_x = Jacobi.cn(x, m);  cn_iy = rot_cn(y, m)
-  sn_x = Jacobi.sn(x, m);  sn_iy = rot_sn(y, m)
-  dn_x = Jacobi.dn(x, m);  dn_iy = rot_dn(y, m)
-  
-  ((cn_x * cn_iy) - (sn_x * dn_x) * (sn_iy * dn_iy)) / (1 - m * sn_x^2 * sn_iy^2)
+    x = real(u)
+    y = imag(u)
+    
+    cn_x = Jacobi.cn(x, m);  cn_iy = rot_cn(y, m)
+    sn_x = Jacobi.sn(x, m);  sn_iy = rot_sn(y, m)
+    dn_x = Jacobi.dn(x, m);  dn_iy = rot_dn(y, m)
+    
+    ((cn_x * cn_iy) - (sn_x * dn_x) * (sn_iy * dn_iy)) / (1 - m * sn_x^2 * sn_iy^2)
 end
 
 # --- test ---
@@ -169,20 +169,20 @@ function test_peirce_proj(long = 0, N = 12, use_taylor = true; use_complex = tru
         my_z = 1 .+ [my_peirce_proj(u, N, use_taylor) for u in longline] / real(my_K(0.5, N, use_taylor))
     end
     x_plot = plot(
-      mesh,
-      [real.(my_z) real.(good_z)],
-      linecolor = [RGB(0.5, 0, 0.5) RGB(1, 0.5, 0.8)],
-      linestyle = [:solid :dash],
-      ylims = (0, 2),
-      legend = false
+        mesh,
+        [real.(my_z) real.(good_z)],
+        linecolor = [RGB(0.5, 0, 0.5) RGB(1, 0.5, 0.8)],
+        linestyle = [:solid :dash],
+        ylims = (0, 2),
+        legend = false
     )
     y_plot = plot(
-      mesh,
-      [imag.(my_z), imag.(good_z)],
-      linecolor = [RGB(0, 0.5, 0) RGB(0.5, 1, 0)],
-      linestyle = [:solid :dash],
-      ylims = (-1, 1),
-      legend = false
+        mesh,
+        [imag.(my_z), imag.(good_z)],
+        linecolor = [RGB(0, 0.5, 0) RGB(0.5, 1, 0)],
+        linestyle = [:solid :dash],
+        ylims = (-1, 1),
+        legend = false
     )
     plot(x_plot, y_plot, layout = (2, 1))
 end
@@ -197,20 +197,20 @@ function test_equator(N = 12, use_taylor = true; use_complex = true)
         my_z = 1 .+ [complex(my_peirce_proj(u, N, use_taylor)...) for u in equator] / real(my_K(0.5, N, use_taylor))
     end
     x_plot = plot(
-      mesh,
-      [real.(my_z) real.(good_z)],
-      linecolor = [RGB(0.5, 0, 0.5) RGB(1, 0.5, 0.8)],
-      linestyle = [:solid :dash],
-      ylims = (0, 2),
-      legend = false
+        mesh,
+        [real.(my_z) real.(good_z)],
+        linecolor = [RGB(0.5, 0, 0.5) RGB(1, 0.5, 0.8)],
+        linestyle = [:solid :dash],
+        ylims = (0, 2),
+        legend = false
     )
     y_plot = plot(
-      mesh,
-      [imag.(my_z), imag.(good_z)],
-      linecolor = [RGB(0, 0.5, 0) RGB(0.5, 1, 0)],
-      linestyle = [:solid :dash],
-      ylims = (-1, 1),
-      legend = false
+        mesh,
+        [imag.(my_z), imag.(good_z)],
+        linecolor = [RGB(0, 0.5, 0) RGB(0.5, 1, 0)],
+        linestyle = [:solid :dash],
+        ylims = (-1, 1),
+        legend = false
     )
     plot(x_plot, y_plot, layout = (2, 1))
 end
