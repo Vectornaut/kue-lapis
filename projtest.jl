@@ -84,9 +84,19 @@ function my_peirce_proj(u, N = 12, use_taylor = true)
     return 0.5*(my_F(angles[1], 0.5, N, use_taylor) + im*my_F(angles[2], 0.5, N, use_taylor))
 end
 
+# Carlson 1995, equation 4.20
+function my_acos(z, N = 12, use_taylor = true)
+    if real(z) >= 0
+        z_sq = z*z
+        return my_sqrt(1 - z_sq) * RF([z_sq, 1, 1], N, use_taylor)
+    else
+        return pi - my_acos(-z, N, use_taylor)
+    end
+end
+
 function cpx_peirce_proj(u, N = 12, use_taylor = true)
     zeta = complex(u[[1, 2]]...) / (1 - u[3])
-    return my_F(acos(-zeta), 0.5, N, use_taylor)
+    return my_F(my_acos(-zeta), 0.5, N, use_taylor)
 end
 
 # --- complexified cn (for testing) ---
@@ -111,6 +121,11 @@ end
 function test_sqrt()
     ax_mesh = LinRange(-2, 2, 6)
     [my_sqrt(x+im*y) - sqrt(x+im*y) for y in reverse(ax_mesh), x in ax_mesh]
+end
+
+function test_acos()
+    ax_mesh = LinRange(-2, 2, 6)
+    [my_acos(x+im*y) - acos(x+im*y) for y in reverse(ax_mesh), x in ax_mesh]
 end
 
 # check values from section 3 of
