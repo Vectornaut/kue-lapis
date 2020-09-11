@@ -125,6 +125,11 @@ function test_peirce_proj(dir = 1, N = 12, use_taylor = true)
     plot(x_plot, y_plot, layout = (2, 1))
 end
 
+function test_sqrt()
+    mesh = LinRange(-2, 2, 6)
+    [my_sqrt(x+im*y) - sqrt(x+im*y) for y in reverse(mesh), x in mesh]
+end
+
 # test values from section 3 of
 #
 #   B. C. Carlson, "Numerical computation of real or complex elliptic integrals"
