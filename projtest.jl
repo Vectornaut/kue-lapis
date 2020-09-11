@@ -125,6 +125,24 @@ function test_peirce_proj(dir = 1, N = 12, use_taylor = true)
     plot(x_plot, y_plot, layout = (2, 1))
 end
 
+# test values from section 3 of
+#
+#   B. C. Carlson, "Numerical computation of real or complex elliptic integrals"
+#   Numerical Algorithms, vol. 10, pp. 13--26, 1995
+#   <doi:10.1007/BF02198293>
+#
+function test_RF(N = 12, use_taylor = true)
+    return [
+        RF([1, 2, 0], N, use_taylor) - 1.3110287771461,
+        RF([im, -im, 0], N, use_taylor) - 1.8540746773014,
+        RF([0.5, 1, 0], N, use_taylor) - 1.8540746773014,
+        RF([im-1, im, 0], N, use_taylor) - (0.79612586584234 - 1.213856669865im),
+        RF([2, 3, 4], N, use_taylor) - 0.58408284167715,
+        RF([im, -im, 2], N, use_taylor) - 1.0441445654064,
+        RF([im-1, im, 1-im], N, use_taylor) - (0.9391205218619 - 0.53296252018635im)
+    ]
+end
+
 function test_F(y = 0, N = 12, use_taylor = true)
     mesh = LinRange(-3pi/2, 3pi/2, 600)
     my_z = [my_F(phi + im*y, 0.5, N, use_taylor) for phi in mesh]
