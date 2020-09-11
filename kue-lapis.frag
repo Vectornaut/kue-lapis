@@ -1,4 +1,48 @@
+// --- complex arithmetic ---
+
+const vec2 ZERO = vec2(0.);
+const vec2 ONE  = vec2(1., 0.);
+const vec2 I    = vec2(0., 1.); //// UNUSED
+
+//  the complex conjugate of `z`
+vec2 conj(vec2 z) {
+    return vec2(z.x, -z.y);
+}
+
+// the product of `z` and `w`
+vec2 mul(vec2 z, vec2 w) {
+    return mat2(z, conj(z).yx) * w;
+}
+
+// the reciprocal of `z`
+vec2 rcp(vec2 z) {
+    // 1/z = z'/(z'*z) = z'/|z|^2
+    return conj(z) / dot(z, z);
+}
+
+// the square root of `z`
+//
+// Stanley Rabinowitz, "How to Find the Square Root of a Complex Number"
+// Mathematics and Informatics Quarterly, vol. 3, pp. 54--56, 1993
+//
+// Timm Ahrendt, "Fast high-precision computation of complex square roots"
+// Proceedings of ISSAC '96, pp. 142--149
+// <doi:10.1145/236869.236924>
+//
+vec2 csqrt(vec2 z) {
+    float r = length(z);
+    return vec2(sqrt(0.5*(r + z.x)), sign(z.y)*sqrt(0.5*(r - z.x)));
+}
+
+vec2 csin(vec2 z) {
+    return vec2(sin(z.x) * cosh(z.y), cos(z.x) * sinh(z.y));
+}
+
 // --- elliptic integral of the first kind ---
+//
+// B. C. Carlson, "Numerical computation of real or complex elliptic integrals"
+// Numerical Algorithms, vol. 10, pp. 13--26, 1995
+// <doi:10.1007/BF02198293>
 //
 // William Press and Saul Teukolsky, "Elliptic Integrals"
 // Computers in Physics, vol. 4, pp. 92--96, 1990
@@ -6,41 +50,48 @@
 
 const int N = 12;
 
-const float C1 = 1./24.;
-const float C2 = 0.1;
-const float C3 = 3./44.;
-const float C4 = 1./14.;
+const vec2 C1 = 1./24. * ONE;
+const vec2 C2 = 0.1    * ONE;
+const vec2 C3 = 3./44. * ONE;
+const vec2 C4 = 1./14. * ONE;
 
-float RF(vec3 r) {
+vec2 RF(vec2 x, vec2 y, vec2 z) {
     for (int n = 0; n < N; n++) {
-      vec3 sqrt_r = sqrt(r);
-      vec3 pair = sqrt_r * sqrt_r.yzx;
-      float lambda = pair.x + pair.y + pair.z;
-      r = 0.25*(r + vec3(lambda));
+        vec2 sqrt_x = csqrt(x);
+        vec2 sqrt_y = csqrt(y);
+        vec2 sqrt_z = csqrt(z);
+        vec2 lambda = mul(sqrt_x, sqrt_y) + mul(sqrt_y, sqrt_z) + mul(sqrt_z, sqrt_x);
+        x = 0.25*(x + lambda);
+        y = 0.25*(y + lambda);
+        z = 0.25*(z + lambda);
     }
-    float avg = (r.x + r.y + r.z)/3.;
-    vec3 off = r - vec3(avg);
-    float e2 = off.x * off.y - off.z * off.z;
-    float e3 = off.x * off.y * off.z;
-    return (1. + (C1*e2 - C2 - C3*e3)*e2 + C4*e3) / sqrt(avg);
+    vec2 avg = (x + y + z)/3.;
+    vec2 off_x = x - avg;
+    vec2 off_y = y - avg;
+    vec2 off_z = z - avg;
+    vec2 e2 = mul(off_x, off_y) - mul(off_z, off_z);
+    vec2 e3 = mul(mul(off_x, off_y), off_z);
+    return mul(ONE + mul(mul(C1, e2) - C2 - mul(C3, e3), e2) + mul(C4, e3), rcp(csqrt(avg)));
 }
 
 const float PI = 3.141592653589793;
 
-float K(float m) { return RF(vec3(0., 1. - m, 1.)); }
+vec2 K(vec2 m) { return RF(ZERO, ONE - m, ONE); }
 
 // to save work, we precompute K(m) and pass it as K_val
-float F(float phi, float m, float K_val) {
-    // phi = phi_tile*pi + phi_off, with phi_off in [-pi/2, pi/2]
-    float phi_tile = round(phi/PI);
-    float phi_off = phi - phi_tile*PI;
+vec2 F(vec2 phi, vec2 m, vec2 K_val) {
+    // phi = phi_tile*pi + phi_off, where phi_tile is an integer and phi_off.x
+    // is in [-pi/2, pi/2]
+    float phi_tile = round(phi.x / PI);
+    vec2 phi_off = phi - phi_tile * vec2(PI, 0.);
     
     // integrate from zero to phi_tile*pi
-    float val_tile = phi_tile * 2.*K_val;
+    vec2 val_tile = phi_tile * 2.*K_val;
     
     // integrate from phi_tile*pi to phi
-    vec2 u = vec2(cos(phi_off), sin(phi_off));
-    float val_off = u.y * RF(vec3(u.x*u.x, 1. - m*u.y*u.y, 1.));
+    vec2 s = csin(phi_off);
+    vec2 s_sq = mul(s, s);
+    vec2 val_off = mul(s, RF(ONE - s_sq, ONE - mul(m, s_sq), ONE));
     
     return val_tile + val_off;
 }
@@ -50,6 +101,8 @@ float F(float phi, float m, float K_val) {
 // James Pierpont, "Note on C. S. Peirce's paper on
 //     'A Quincuncial Projection of the sphere'
 // American Journal of Mathematics, vol. 18, no. 2, pp. 145--152, 1896
+
+//// ~~~ old version
 
 vec2 cn_coords(vec3 u) {
     float x_sq = u.x * u.x;
@@ -66,9 +119,7 @@ vec2 cn_coords(vec3 u) {
 
 const float K_1_2 = 1.854074677301372; // the quarter-period K(1/2)
 
-vec2 conj(vec2 z) { return vec2(z.x, -z.y); }
-
-vec2 peirce_proj(vec3 u) {
+/*vec2 old_peirce_proj(vec3 u) {
     // map into the top-sheet diamond,
     //
     //           (1,  1)
@@ -81,7 +132,46 @@ vec2 peirce_proj(vec3 u) {
     //
     vec2 raw_angles = acos(clamp(cn_coords(u), -1., 1.));
     vec2 angles = sign(conj(u.xy)) * (vec2(PI, 0.) - raw_angles);
-    vec2 z = (0.5/K_1_2)*vec2(F(angles.x, 0.5, K_1_2), F(angles.y, 0.5, K_1_2)) + vec2(1., 0.);
+    vec2 z = (0.5/K_1_2)*vec2(old_F(angles.x, 0.5, K_1_2), old_F(angles.y, 0.5, K_1_2)) + vec2(1., 0.);
+    
+    // if we're on the bottom sheet, reflect across the southwest edge of the
+    // top-sheet diamond
+    if (u.z > 0.) return z; else return -z.yx;
+}*/
+
+//// ~~~ new version
+
+// inverse cosine, valid in the right half of the unit disk (Carlson 1995,
+// equation 4.20)
+vec2 cacos_right(vec2 z) {
+    vec2 z_sq = mul(z, z);
+    return mul(csqrt(ONE - z_sq), RF(z_sq, ONE, ONE));
+}
+
+// inverse cosine
+vec2 cacos(vec2 z) {
+    if (z.x >= 0.) {
+        return cacos_right(z);
+    } else {
+        return PI*ONE - cacos_right(-z);
+    }
+}
+
+vec2 peirce_proj(vec3 u) {
+    // project stereographically onto the equatorial disk
+    vec2 zeta = u.xy / (1. - abs(u.z));
+    
+    // map into the top-sheet diamond,
+    //
+    //           (1,  1)
+    //            .   .
+    //          .       .
+    //     (0,  0)     (2,  0)
+    //          .       .
+    //            .   .
+    //           (1, -1)
+    //
+    vec2 z = F(cacos(-zeta), 0.5*ONE, K_1_2*ONE);
     
     // if we're on the bottom sheet, reflect across the southwest edge of the
     // top-sheet diamond

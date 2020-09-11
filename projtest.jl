@@ -41,7 +41,7 @@ function my_F(phi, m, N = 12, use_taylor = true)
     phi_off = phi - phi_tile*pi
     
     # integrate from zero to phi_tile*pi
-    val_tile = (phi_tile == 0) ? 0 : phi_tile * 2my_K(m, N, use_taylor)
+    val_tile = phi_tile * 2my_K(m, N, use_taylor)
     
     # integrate from phi_tile*pi to phi
     s = sin(phi_off)
