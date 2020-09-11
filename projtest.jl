@@ -77,7 +77,7 @@ function my_peirce_proj(zeta, N = 12, use_taylor = true)
 end
 
 function cpx_peirce_proj(zeta, N = 12, use_taylor = true)
-    return F(acos(zeta), 0.5)
+    return my_F(acos(zeta), 0.5, N, use_taylor)
 end
 
 function good_peirce_proj(zeta)
@@ -85,16 +85,35 @@ function good_peirce_proj(zeta)
     return 0.5*[F(angles[1], 1/2), F(angles[2], 1/2)]
 end
 
+# --- complexified cn (for testing) ---
+
+rot_cn(u::Real, m::Real) = Jacobi.nc(u, 1-m)
+rot_sn(u::Real, m::Real) = Jacobi.sc(u, 1-m)*im
+rot_dn(u::Real, m::Real) = Jacobi.dc(u, 1-m)
+
+function cn(u::Complex, m::Real)
+  x = real(u)
+  y = imag(u)
+  
+  cn_x = Jacobi.cn(x, m);  cn_iy = rot_cn(y, m)
+  sn_x = Jacobi.sn(x, m);  sn_iy = rot_sn(y, m)
+  dn_x = Jacobi.dn(x, m);  dn_iy = rot_dn(y, m)
+  
+  ((cn_x * cn_iy) - (sn_x * dn_x) * (sn_iy * dn_iy)) / (1 - m * sn_x^2 * sn_iy^2)
+end
+
 # --- test ---
 
 function test_equator(N = 12, use_taylor = true)
     mesh = LinRange(0, 2pi, 400)
     equator = cis.(mesh)
-    my_z = [my_peirce_proj(zeta, N, use_taylor) for zeta in equator] / real(my_K(0.5, N, use_taylor))
+    ##my_z = [my_peirce_proj(zeta, N, use_taylor) for zeta in equator] / real(my_K(0.5, N, use_taylor))
+    my_z = [cpx_peirce_proj(zeta, N, use_taylor) for zeta in equator]  / real(my_K(0.5, N, use_taylor))
     good_z = good_peirce_proj.(equator) / K(0.5)
     x_plot = plot(
       mesh,
-      [first.(my_z) first.(good_z)],
+      ##[first.(my_z) first.(good_z)],
+      [real.(my_z) first.(good_z)],
       linecolor = [RGB(0.5, 0, 0.5) RGB(1, 0.5, 0.8)],
       linestyle = [:solid :dash],
       ylims = (-1, 1),
@@ -102,7 +121,8 @@ function test_equator(N = 12, use_taylor = true)
     )
     y_plot = plot(
       mesh,
-      [last.(my_z), last.(good_z)],
+      ##[last.(my_z), last.(good_z)],
+      [imag.(my_z), last.(good_z)],
       linecolor = [RGB(0, 0.5, 0) RGB(0.5, 1, 0)],
       linestyle = [:solid :dash],
       ylims = (-1, 1),
@@ -113,11 +133,13 @@ end
 
 function test_peirce_proj(dir = 1, N = 12, use_taylor = true)
     mesh = LinRange(-1, 1, 200)
-    my_z = [my_peirce_proj(dir*zeta, N, use_taylor) for zeta in mesh] / real(my_K(0.5, N, use_taylor))
+    ##my_z = [my_peirce_proj(dir*zeta, N, use_taylor) for zeta in mesh] / real(my_K(0.5, N, use_taylor))
+    my_z = [cpx_peirce_proj(dir*zeta, N, use_taylor) for zeta in mesh]  / real(my_K(0.5, N, use_taylor))
     good_z = good_peirce_proj.(dir*mesh) / K(0.5)
     x_plot = plot(
       mesh,
-      [first.(my_z) first.(good_z)],
+      ##[first.(my_z) first.(good_z)],
+      [real.(my_z) first.(good_z)],
       linecolor = [RGB(0.5, 0, 0.5) RGB(1, 0.5, 0.8)],
       linestyle = [:solid :dash],
       ylims = (-1, 1),
@@ -125,7 +147,8 @@ function test_peirce_proj(dir = 1, N = 12, use_taylor = true)
     )
     y_plot = plot(
       mesh,
-      [last.(my_z), last.(good_z)],
+      ##[last.(my_z), last.(good_z)],
+      [imag.(my_z), last.(good_z)],
       linecolor = [RGB(0, 0.5, 0) RGB(0.5, 1, 0)],
       linestyle = [:solid :dash],
       ylims = (-1, 1),
@@ -135,8 +158,8 @@ function test_peirce_proj(dir = 1, N = 12, use_taylor = true)
 end
 
 function test_sqrt()
-    mesh = LinRange(-2, 2, 6)
-    [my_sqrt(x+im*y) - sqrt(x+im*y) for y in reverse(mesh), x in mesh]
+    ax_mesh = LinRange(-2, 2, 6)
+    [my_sqrt(x+im*y) - sqrt(x+im*y) for y in reverse(ax_mesh), x in ax_mesh]
 end
 
 # check values from section 3 of
@@ -177,4 +200,10 @@ function test_F(y = 0, N = 12, use_taylor = true)
     )
     crossover = plot(mesh, [cos.(mesh).^2, [1-0.5*sin(phi)^2 for phi in mesh]], legend = false)
     plot(comparison, crossover, layout = (2, 1))
+end
+
+function test_inverse(N = 12, use_taylor = true)
+    ax_mesh = K(0.5)*LinRange(0, 1, 5)
+    mesh = [r*(1+im) + s*(1-im) for r in reverse(ax_mesh), s in ax_mesh]
+    [z - cpx_peirce_proj(cn(z, 0.5), N, use_taylor) for z in mesh]
 end
