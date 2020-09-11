@@ -73,7 +73,11 @@ get_angles(zeta) =
 
 function my_peirce_proj(zeta, N = 12, use_taylor = true)
     angles = get_angles(zeta)
-    return 0.5*[my_F(angles[1], 0.5, N, use_taylor), my_F(angles[2], 0.5, N, use_taylor)]
+    return 0.5*real.([my_F(angles[1], 0.5, N, use_taylor), my_F(angles[2], 0.5, N, use_taylor)])
+end
+
+function cpx_peirce_proj(zeta, N = 12, use_taylor = true)
+    return F(acos(zeta), 0.5)
 end
 
 function good_peirce_proj(zeta)
@@ -86,7 +90,7 @@ end
 function test_equator(N = 12, use_taylor = true)
     mesh = LinRange(0, 2pi, 400)
     equator = cis.(mesh)
-    my_z = [my_peirce_proj(zeta, N, use_taylor) for zeta in equator] / my_K(0.5, N, use_taylor)
+    my_z = [my_peirce_proj(zeta, N, use_taylor) for zeta in equator] / real(my_K(0.5, N, use_taylor))
     good_z = good_peirce_proj.(equator) / K(0.5)
     x_plot = plot(
       mesh,
@@ -109,7 +113,7 @@ end
 
 function test_peirce_proj(dir = 1, N = 12, use_taylor = true)
     mesh = LinRange(-1, 1, 200)
-    my_z = [my_peirce_proj(dir*zeta, N, use_taylor) for zeta in mesh] / my_K(0.5, N, use_taylor)
+    my_z = [my_peirce_proj(dir*zeta, N, use_taylor) for zeta in mesh] / real(my_K(0.5, N, use_taylor))
     good_z = good_peirce_proj.(dir*mesh) / K(0.5)
     x_plot = plot(
       mesh,
