@@ -217,17 +217,12 @@ vec3 debug_stripe(vec2 z, vec2 charge) {
 
 const vec2 charge = vec2(1., 3.);
 
-vec3 raw_image(vec2 fragCoord) {
-    float small_dim = min(iResolution.x, iResolution.y);
+vec3 raw_image(vec2 fragCoord, float small_dim, mat3 orient) {
     vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim - vec2(0.8, 0.);
     vec3 color = vec3(0.1, 0.0, 0.2);
-    
     float r_sq = dot(p, p);
     if (r_sq < 1.) {
-        vec3 attitude = iTime * vec3(1./(2.+PI), 1./2., 1./PI);
-        mat3 orient = euler_rot(attitude);
         vec3 u = orient * vec3(p, sqrt(1. - r_sq));
-        vec2 z;
         float t = mod(iTime, 4.);
         if (t < 2.) {
             color = stripe(peirce_proj(u), charge);
@@ -245,11 +240,23 @@ vec3 raw_image(vec2 fragCoord) {
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    // find smal dimension
+    float small_dim = min(iResolution.x, iResolution.y);
+    
+    // set attitude
+    vec3 attitude = iTime * vec3(1./(2.+PI), 1./2., 1./PI);
+    mat3 orient = euler_rot(attitude);
+    
+    // mix sub-pixels
     vec2 jiggle = vec2(0.25);
     vec3 color_sum = vec3(0.);
     for (int sgn_x = 0; sgn_x < 2; sgn_x++) {
         for (int sgn_y = 0; sgn_y < 2; sgn_y++) {
-            color_sum += raw_image(fragCoord + jiggle);
+            color_sum += raw_image(
+                fragCoord + jiggle,
+                small_dim,
+                orient
+            );
             jiggle.y = -jiggle.y;
         }
         jiggle.x = -jiggle.x;
