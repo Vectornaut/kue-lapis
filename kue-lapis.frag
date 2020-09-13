@@ -2,6 +2,7 @@
 
 const vec2 ZERO = vec2(0.);
 const vec2 ONE  = vec2(1., 0.);
+const vec2 I    = vec2(0., 1.);
 
 //  the complex conjugate of `z`
 vec2 conj(vec2 z) {
@@ -75,7 +76,9 @@ vec2 RF(vec2 x, vec2 y, vec2 z) {
 
 const float PI = 3.141592653589793;
 
-vec2 K(vec2 m) { return RF(ZERO, ONE - m, ONE); }
+vec2 K(vec2 m) {
+    return RF(ZERO, ONE - m, ONE);
+}
 
 // to save work, we precompute K(m) and pass it as K_val
 vec2 F(vec2 phi, vec2 m, vec2 K_val) {
@@ -110,11 +113,7 @@ vec2 cacos_right(vec2 z) {
 
 // inverse cosine
 vec2 cacos(vec2 z) {
-    if (z.x >= 0.) {
-        return cacos_right(z);
-    } else {
-        return PI*ONE - cacos_right(-z);
-    }
+    if (z.x > 0.) return cacos_right(z); else return PI*ONE - cacos_right(-z);
 }
 
 const float K_1_2 = 1.854074677301372; // the quarter-period K(1/2)
@@ -123,7 +122,7 @@ vec2 peirce_proj(vec3 u) {
     // project stereographically onto the equatorial disk
     vec2 zeta = u.xy / (1. + abs(u.z));
     
-    // map into the top-sheet diamond,
+    // map into the top-sheet diamond, which looks like
     //
     //           (1,  1)
     //            .   .
@@ -133,7 +132,8 @@ vec2 peirce_proj(vec3 u) {
     //            .   .
     //           (1, -1)
     //
-    vec2 z = F(cacos(-zeta), 0.5*ONE, K_1_2*ONE) / K_1_2;
+    // in the K(m), iK(1-m) frame
+    vec2 z = F(cacos(-zeta), 0.5*ONE, K_1_2*ONE);
     
     // if we're on the bottom sheet, reflect across the southwest edge of the
     // top-sheet diamond
@@ -172,7 +172,7 @@ const vec3 color_d = vec3(1., 0.64, 0.);
 const vec3 color_e = vec3(1., 0.45, 0.);
 
 vec3 stripe(vec2 z, vec2 charge) {
-    float s = 0.25 * dot(conj(charge), z.yx); // the signed area (1/4) * D(charge, z)
+    float s = 0.5 * dot(conj(charge), z.yx); // the signed area (1/2) * D(charge, z)
     float s_off = 16.*abs(s - round(s)); // fold s into the fundamental domain [0, 8]
     if (s_off < 1.) {
         return color_e;
@@ -188,7 +188,7 @@ vec3 stripe(vec2 z, vec2 charge) {
 }
 
 vec3 debug_stripe(vec2 z, vec2 charge) {
-    float s = 0.25 * dot(conj(charge), z.yx); // the signed area (1/4) * D(charge, z)
+    float s = 0.5 * dot(conj(charge), z.yx); // the signed area (1/2) * D(charge, z)
     float s_off = 16.*abs(s - round(s)); // fold s into the fundamental domain [0, 8]
     vec3 color;
     if (s_off < 1.) {
@@ -202,22 +202,22 @@ vec3 debug_stripe(vec2 z, vec2 charge) {
     } else {
         color = color_a;
     }
-    if (z.x + z.y > 1.95) {
+    if (z.y > 0.975) {
         color = mix(color, vec3(1., 1., 0.), 0.5);
-    } else if (z.x + z.y < -1.95) {
+    } else if (z.y < -0.975) {
         color = mix(color, vec3(0., 0., 1.), 0.5);
     }
-    if (z.x - z.y < 0.05) {
+    if (z.x < 0.025) {
       color = mix(color, vec3(0.25, 1., 0.), 0.5);
-    } else if (z.x - z.y > 1.95) {
+    } else if (z.x > 0.975) {
       color = mix(color, vec3(0., 0.75, 1.), 0.5);
     }
     return color;
 }
 
-const vec2 charge = vec2(1., 3.);
+const vec2 charge = vec2(1., -2.);
 
-vec3 raw_image(vec2 fragCoord, float small_dim, mat3 orient) {
+vec3 raw_image(vec2 fragCoord, float small_dim, mat3 orient, mat2 rectify) {
     vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim - vec2(0.8, 0.);
     vec3 color = vec3(0.1, 0.0, 0.2);
     float r_sq = dot(p, p);
@@ -225,14 +225,14 @@ vec3 raw_image(vec2 fragCoord, float small_dim, mat3 orient) {
         vec3 u = orient * vec3(p, sqrt(1. - r_sq));
         float t = mod(iTime, 4.);
         if (t < 2.) {
-            color = stripe(peirce_proj(u), charge);
+            color = stripe(rectify * peirce_proj(u), charge);
         } else {
-            color = debug_stripe(peirce_proj(u), charge);
+            color = debug_stripe(rectify * peirce_proj(u), charge);
         }
     } else {
-        vec2 p_mini = 2.*(p - vec2(-2.15, 0.25));
-        vec2 p_rect = mat2(1., 1., -1., 1.) * p_mini;
-        if (0. < p_rect.x && p_rect.x < 2. && abs(p_rect.y) < 2.) {
+        vec2 p_mini = 1.5*(p + 2.15*ONE);
+        /*vec2 p_rect = mat2(1., 1., -1., 1.) * p_mini;*/
+        if (0. < p_mini.x && p_mini.x < 1. && abs(p_mini.y) < 1.) {
             color = debug_stripe(p_mini, charge);
         }
     }
@@ -247,7 +247,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec3 attitude = iTime * vec3(1./(2.+PI), 1./2., 1./PI);
     mat3 orient = euler_rot(attitude);
     
-    // mix sub-pixels
+    // set modulus
+    vec2 m = vec2(0.5 /*+ 0.2*sin(iTime)*/, 0.);
+    /*mat2 quarter_frame = mat2(K(m), mul(I, K(ONE - m)));*/
+    mat2 quarter_frame = mat2(K_1_2*ONE, K_1_2*I);
+    mat2 rectify = inverse(quarter_frame * mat2(1., -1., 1., 1.));
+    
+    // mix subpixels
     vec2 jiggle = vec2(0.25);
     vec3 color_sum = vec3(0.);
     for (int sgn_x = 0; sgn_x < 2; sgn_x++) {
@@ -255,7 +261,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
             color_sum += raw_image(
                 fragCoord + jiggle,
                 small_dim,
-                orient
+                orient,
+                rectify
             );
             jiggle.y = -jiggle.y;
         }
