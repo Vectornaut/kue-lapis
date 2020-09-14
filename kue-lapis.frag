@@ -118,7 +118,7 @@ vec2 cacos(vec2 z) {
 
 const float K_1_2 = 1.854074677301372; // the quarter-period K(1/2)
 
-vec2 peirce_proj(vec3 u) {
+vec2 peirce_proj(vec3 u, vec2 m, vec2 K_val) {
     // project stereographically onto the equatorial disk
     vec2 zeta = u.xy / (1. + abs(u.z));
     
@@ -133,7 +133,7 @@ vec2 peirce_proj(vec3 u) {
     //           (1, -1)
     //
     // in the K(m), iK(1-m) frame
-    vec2 z = F(cacos(-zeta), 0.5*ONE, K_1_2*ONE);
+    vec2 z = F(cacos(-zeta), m, K_val);
     
     // if we're on the bottom sheet, reflect across the southwest edge of the
     // top-sheet diamond
@@ -217,7 +217,14 @@ vec3 debug_stripe(vec2 z, vec2 charge) {
 
 const vec2 charge = vec2(1., -2.);
 
-vec3 raw_image(vec2 fragCoord, float small_dim, mat3 orient, mat2 rectify) {
+vec3 raw_image(
+    vec2 fragCoord,
+    float small_dim,
+    mat3 orient,
+    vec2 m,
+    vec2 K_val,
+    mat2 rectify
+) {
     vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim - vec2(0.8, 0.);
     vec3 color = vec3(0.1, 0.0, 0.2);
     float r_sq = dot(p, p);
@@ -225,9 +232,9 @@ vec3 raw_image(vec2 fragCoord, float small_dim, mat3 orient, mat2 rectify) {
         vec3 u = orient * vec3(p, sqrt(1. - r_sq));
         float t = mod(iTime, 4.);
         if (t < 2.) {
-            color = stripe(rectify * peirce_proj(u), charge);
+            color = stripe(rectify * peirce_proj(u, m, K_val), charge);
         } else {
-            color = debug_stripe(rectify * peirce_proj(u), charge);
+            color = debug_stripe(rectify * peirce_proj(u, m, K_val), charge);
         }
     } else {
         vec2 p_mini = 1.5*(p + 2.15*ONE);
@@ -244,13 +251,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float small_dim = min(iResolution.x, iResolution.y);
     
     // set attitude
-    vec3 attitude = iTime * vec3(1./(2.+PI), 1./2., 1./PI);
+    vec3 attitude = iTime * 0.2 * vec3(1./(2.+PI), 1./2., 1./PI);
     mat3 orient = euler_rot(attitude);
     
     // set modulus
     vec2 m = vec2(0.5 /*+ 0.2*sin(iTime)*/, 0.);
-    /*mat2 quarter_frame = mat2(K(m), mul(I, K(ONE - m)));*/
-    mat2 quarter_frame = mat2(K_1_2*ONE, K_1_2*I);
+    mat2 quarter_frame = mat2(K(m), mul(I, K(ONE - m)));
+    /*mat2 quarter_frame = mat2(K_1_2*ONE, K_1_2*I);*/
     mat2 rectify = inverse(quarter_frame * mat2(1., -1., 1., 1.));
     
     // mix subpixels
@@ -262,6 +269,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
                 fragCoord + jiggle,
                 small_dim,
                 orient,
+                m,
+                quarter_frame[0],
                 rectify
             );
             jiggle.y = -jiggle.y;
