@@ -20,20 +20,6 @@ vec2 rcp(vec2 z) {
     return conj(z) / dot(z, z);
 }
 
-// the square root of `z`
-//
-// Stanley Rabinowitz, "How to Find the Square Root of a Complex Number"
-// Mathematics and Informatics Quarterly, vol. 3, pp. 54--56, 1993
-//
-// Timm Ahrendt, "Fast high-precision computation of complex square roots"
-// Proceedings of ISSAC '96, pp. 142--149
-// <doi:10.1145/236869.236924>
-//
-/*vec2 csqrt(vec2 z) {
-    float r = length(z);
-    return vec2(sqrt(0.5*(r + z.x)), sign(z.y)*sqrt(0.5*(r - z.x)));
-}*/
-
 // the square root of `z`, from the complex arithmetic code listing in
 // Appendix C of _Numerical Recipes in C_
 //
@@ -149,8 +135,6 @@ vec2 cacos(vec2 z) {
     if (z.x > 0.) return cacos_right(z); else return PI*ONE - cacos_right(-z);
 }
 
-const float K_1_2 = 1.854074677301372; // the quarter-period K(1/2)
-
 // the generalized Peirce projection. its output z is defined by the equation
 // cn(z, m) = -zeta, where zeta is the stereographic projection of the unit
 // vector u from the south pole onto the equatorial plane. the image of the
@@ -239,7 +223,7 @@ vec3 stripe(vec2 z, vec2 charge) {
     }
 }
 
-vec3 debug_stripe(vec2 z, vec2 charge) {
+/*vec3 debug_stripe(vec2 z, vec2 charge) {
     float s = 0.5 * dot(conj(charge), z.yx); // the signed area (1/2) * D(charge, z)
     float s_off = 16.*abs(s - round(s)); // fold s into the fundamental domain [0, 8]
     vec3 color;
@@ -265,7 +249,7 @@ vec3 debug_stripe(vec2 z, vec2 charge) {
       color = mix(color, vec3(0., 0.75, 1.), 0.5);
     }
     return color;
-}
+}*/
 
 const vec2 charge = vec2(1., -2.);
 
@@ -282,17 +266,18 @@ vec3 raw_image(
     float r_sq = dot(p, p);
     if (r_sq < 1.) {
         vec3 u = orient * vec3(p, sqrt(1. - r_sq));
-        float t = mod(iTime, 4.);
+        color = stripe(rectify * peirce_proj(u, m, K_val), charge);
+        /*float t = mod(iTime, 4.);
         if (t < 2.) {
             color = stripe(rectify * peirce_proj(u, m, K_val), charge);
         } else {
             color = debug_stripe(rectify * peirce_proj(u, m, K_val), charge);
-        }
+        }*/
     } else {
         vec2 p_mini = 1.5*(p + 2.15*ONE);
-        /*vec2 p_rect = mat2(1., 1., -1., 1.) * p_mini;*/
         if (0. < p_mini.x && p_mini.x < 1. && abs(p_mini.y) < 1.) {
-            color = debug_stripe(p_mini, charge);
+            color = stripe(p_mini, charge);
+            /*color = debug_stripe(p_mini, charge);*/
         }
     }
     return color;
@@ -303,15 +288,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float small_dim = min(iResolution.x, iResolution.y);
     
     // set attitude
-    /*vec3 attitude = iTime * 0.2 * vec3(1./(2.+PI), 1./2., 1./PI);
-    mat3 orient = euler_rot(attitude);*/
-    mat3 orient = mat3(1.);
+    vec3 attitude = iTime * 0.2 * vec3(1./(2.+PI), 1./2., 1./PI);
+    mat3 orient = euler_rot(attitude);
+    /*mat3 orient = mat3(1.);*/
     
     // set modulus
-    /*vec2 m = vec2(0.5 + 0.4*sin(iTime), 0.);*/
-    vec2 m = vec2(0.1 + 0.05*sin(iTime), 0.);
+    vec2 m = vec2(0.5 + 0.4*sin(iTime), 0.);
     mat2 quarter_frame = mat2(K(m), mul(I, K(ONE - m)));
-    /*mat2 quarter_frame = mat2(K_1_2*ONE, K_1_2*I);*/
     mat2 rectify = inverse(quarter_frame * mat2(1., -1., 1., 1.));
     
     // mix subpixels
