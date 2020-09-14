@@ -251,7 +251,7 @@ vec3 stripe(vec2 z, vec2 charge) {
     return color;
 }*/
 
-const vec2 charge = vec2(1., -2.);
+const vec2 charge = vec2(0., 1.);
 
 vec3 raw_image(
     vec2 fragCoord,
@@ -283,6 +283,8 @@ vec3 raw_image(
     return color;
 }
 
+const float SQRT3_2 = 0.8660254037844386;
+
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     // find smal dimension
     float small_dim = min(iResolution.x, iResolution.y);
@@ -293,7 +295,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     /*mat3 orient = mat3(1.);*/
     
     // set modulus
-    vec2 m = vec2(0.5 + 0.4*sin(iTime), 0.);
+    float s = sin(0.5*iTime);
+    vec2 m = vec2(0.5, SQRT3_2/(1. + exp(4.*s)));
     mat2 quarter_frame = mat2(K(m), mul(I, K(ONE - m)));
     mat2 rectify = inverse(quarter_frame * mat2(1., -1., 1., 1.));
     
