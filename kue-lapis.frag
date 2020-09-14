@@ -150,7 +150,7 @@ vec2 cacos(vec2 z) {
 //
 // in the K(m), iK(1-m) frame
 vec2 peirce_proj(vec3 u, vec2 m, vec2 K_val) {
-    vec2 zeta = u.xy / (1. + u.z); /* there should be tons of roundoff error south pole! why don't we see it? */
+    vec2 zeta = u.xy / (1. + u.z); /* there should be tons of roundoff error near the south pole! why don't we see it? */
     return F(cacos(-zeta), m, K_val);
 }
 
@@ -261,7 +261,7 @@ vec3 raw_image(
     vec2 K_val,
     mat2 rectify
 ) {
-    vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim - vec2(0.8, 0.);
+    vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim - vec2(0.65, 0.);
     vec3 color = vec3(0.1, 0.0, 0.2);
     float r_sq = dot(p, p);
     if (r_sq < 1.) {
@@ -274,7 +274,7 @@ vec3 raw_image(
             color = debug_stripe(rectify * peirce_proj(u, m, K_val), charge);
         }*/
     } else {
-        vec2 p_mini = 1.5*(p + 2.15*ONE);
+        vec2 p_mini = 1.2*(p + 2.25*ONE);
         if (0. < p_mini.x && p_mini.x < 1. && abs(p_mini.y) < 1.) {
             color = stripe(p_mini, charge);
             /*color = debug_stripe(p_mini, charge);*/
