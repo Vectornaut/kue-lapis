@@ -29,9 +29,42 @@ vec2 rcp(vec2 z) {
 // Proceedings of ISSAC '96, pp. 142--149
 // <doi:10.1145/236869.236924>
 //
-vec2 csqrt(vec2 z) {
+/*vec2 csqrt(vec2 z) {
     float r = length(z);
     return vec2(sqrt(0.5*(r + z.x)), sign(z.y)*sqrt(0.5*(r - z.x)));
+}*/
+
+// the square root of `z`, from the complex arithmetic code listing in
+// Appendix C of _Numerical Recipes in C_
+//
+// William Press, Saul Teukolsky, William Vetterling, and Brian Flannery,
+// _Numerical Recipes in C_, 2nd edition. Cambridge University Press, 1992
+//
+vec2 csqrt(vec2 z) {
+    // sqrt(0) = 0
+    if (z.x == 0. && z.y == 0.) {
+        return vec2(0.);
+    }
+    
+    // calculate w
+    vec2 a = abs(z);
+    float w;
+    if (a.x >= a.y) {
+        float sl = a.y / a.x;
+        w = sqrt(a.x) * sqrt(0.5*(1. + sqrt(1. + sl*sl)));
+    } else {
+        float sl = a.x / a.y;
+        w = sqrt(a.y) * sqrt(0.5*(sl + sqrt(1. + sl*sl)));
+    }
+    
+    // construct output
+    if (z.x >= 0.) {
+        return vec2(w, z.y / (2.*w));
+    } else if (z.y >= 0.) {
+        return vec2(z.y/(2.*w), w);
+    } else {
+        return -vec2(z.y/(2.*w), w);
+    }
 }
 
 vec2 csin(vec2 z) {

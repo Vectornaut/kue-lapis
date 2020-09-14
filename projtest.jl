@@ -2,9 +2,35 @@ using Elliptic, Plots
 
 # --- square root ---
 
-function my_sqrt(t)
+function old_sqrt(t)
     r = abs(t)
     return sqrt(0.5*(r + real(t))) + im*sign(imag(t))*sqrt(0.5*(r - real(t)))
+end
+
+function my_sqrt(z)
+    # sqrt(0) = 0
+    if z == 0
+        return 0
+    end
+    
+    # calculate w
+    a = abs.(reim(z))
+    if a[1] >= a[2]
+        sl = a[2] / a[1]
+        w = sqrt(a[1]) * sqrt(0.5*(1. + sqrt(1. + sl*sl)))
+    else
+        sl = a[1] / a[2]
+        w = sqrt(a[2]) * sqrt(0.5*(sl + sqrt(1. + sl*sl)))
+    end
+    
+    # construct output
+    if real(z) >= 0
+        return complex(w, imag(z) / (2w))
+    elseif imag(z) >= 0
+        return complex(imag(z)/(2w), w)
+    else
+        return -complex(imag(z)/(2w), w)
+    end
 end
 
 # --- elliptic integral of the first kind ---
@@ -118,9 +144,14 @@ end
 
 # --- test ---
 
-function test_sqrt()
+function test_sqrt(old = false)
+    if old
+        test_sqrt = old_sqrt
+    else
+        test_sqrt = my_sqrt
+    end
     ax_mesh = LinRange(-2, 2, 6)
-    [my_sqrt(x+im*y) - sqrt(x+im*y) for y in reverse(ax_mesh), x in ax_mesh]
+    [test_sqrt(x+im*y) - sqrt(x+im*y) for y in reverse(ax_mesh), x in ax_mesh]
 end
 
 function test_acos()
