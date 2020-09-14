@@ -255,7 +255,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     mat3 orient = euler_rot(attitude);
     
     // set modulus
-    vec2 m = vec2(0.5 /*+ 0.2*sin(iTime)*/, 0.);
+    vec2 m = vec2(0.5 + 0.2*sin(iTime), 0.);
     mat2 quarter_frame = mat2(K(m), mul(I, K(ONE - m)));
     /*mat2 quarter_frame = mat2(K_1_2*ONE, K_1_2*I);*/
     mat2 rectify = inverse(quarter_frame * mat2(1., -1., 1., 1.));
