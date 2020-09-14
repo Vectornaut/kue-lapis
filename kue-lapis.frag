@@ -118,7 +118,26 @@ vec2 cacos(vec2 z) {
 
 const float K_1_2 = 1.854074677301372; // the quarter-period K(1/2)
 
+// the generalized Peirce projection. its output z is defined by the equation
+// cn(z, m) = -zeta, where zeta is the stereographic projection of the unit
+// vector u from the south pole onto the equatorial plane. the image of the
+// northern hemisphere looks like
+//
+//           (1,  1)
+//            .   .
+//          .       .
+//     (0,  0)     (2,  0)
+//          .       .
+//            .   .
+//           (1, -1)
+//
+// in the K(m), iK(1-m) frame
 vec2 peirce_proj(vec3 u, vec2 m, vec2 K_val) {
+    vec2 zeta = u.xy / (1. + u.z); /* there should be tons of roundoff error south pole! why don't we see it? */
+    return F(cacos(-zeta), m, K_val);
+}
+
+/*vec2 peirce_proj(vec3 u, vec2 m, vec2 K_val) {
     // project stereographically onto the equatorial disk
     vec2 zeta = u.xy / (1. + abs(u.z));
     
@@ -138,7 +157,7 @@ vec2 peirce_proj(vec3 u, vec2 m, vec2 K_val) {
     // if we're on the bottom sheet, reflect across the southwest edge of the
     // top-sheet diamond
     if (u.z > 0.) return z; else return -z.yx;
-}
+}*/
 
 // --- euler angles ---
 
