@@ -319,19 +319,3 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     }
     fragColor = vec4(0.25*color_sum, 1.);
 }
-
-/*void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-    vec2 p = 2.*(fragCoord - 0.5*iResolution.xy)/iResolution.xy;
-    vec2 zeta = 0.99999*vec2(cos(p.x*PI), sin(p.x*PI));
-    vec2 z = peirce_proj(vec3(zeta, 0.))/K(0.5);
-    vec3 color = vec3(1., 1., 1.);
-    if (p.y < z.x) {
-        color.y *= 0.2;
-        color.z *= 0.5;
-    }
-    if (p.y < z.y) {
-        color.x *= 0.2;
-        color.y *= 0.5;
-    }
-    fragColor = vec4(color, 1.);
-}*/
