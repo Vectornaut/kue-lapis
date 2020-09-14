@@ -270,11 +270,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float small_dim = min(iResolution.x, iResolution.y);
     
     // set attitude
-    vec3 attitude = iTime * 0.2 * vec3(1./(2.+PI), 1./2., 1./PI);
-    mat3 orient = euler_rot(attitude);
+    /*vec3 attitude = iTime * 0.2 * vec3(1./(2.+PI), 1./2., 1./PI);
+    mat3 orient = euler_rot(attitude);*/
+    mat3 orient = mat3(1.);
     
     // set modulus
-    vec2 m = vec2(0.5 + 0.2*sin(iTime), 0.);
+    /*vec2 m = vec2(0.5 + 0.4*sin(iTime), 0.);*/
+    vec2 m = vec2(0.1 + 0.05*sin(iTime), 0.);
     mat2 quarter_frame = mat2(K(m), mul(I, K(ONE - m)));
     /*mat2 quarter_frame = mat2(K_1_2*ONE, K_1_2*I);*/
     mat2 rectify = inverse(quarter_frame * mat2(1., -1., 1., 1.));
