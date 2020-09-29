@@ -150,8 +150,13 @@ vec2 cacos(vec2 z) {
 //
 // in the K(m), iK(1-m) frame
 vec2 peirce_proj(vec3 u, vec2 m, vec2 K_val) {
-    vec2 zeta = u.xy / (1. + u.z); /* there should be tons of roundoff error near the south pole! why don't we see it? */
-    return F(cacos(-zeta), m, K_val);
+    if (u.z >= 0.) {
+	    vec2 zeta = u.xy / (1. + u.z);
+    	return F(cacos(-zeta), m, K_val);
+    } else {
+        vec2 omega = (1. + u.z)*rcp(u.xy); /* there should be tons of roundoff error near the south pole! why don't we see it? */
+        return mul(-I, F(cacos(-omega), ONE - m, K(ONE - m)));
+    }
 }
 
 /*vec2 peirce_proj(vec3 u, vec2 m, vec2 K_val) {
@@ -223,6 +228,33 @@ vec3 stripe(vec2 z, vec2 charge) {
     }
 }
 
+vec3 debug_check(vec2 z) {
+    vec2 z_off = mod(z, 2.) - vec2(1.);
+    if (z_off.x < 0.) {
+        z_off = -z_off;
+    }
+    float x = z_off.x;
+    float y = mod(z_off.y, 1.);
+    vec3 color;
+    if (x + y < 1.) {
+        if (z_off.y > 0.) color = vec3(1., 0.6, 0.); else color = vec3(0., 0.8, 0.6);
+    } else {
+        if (z_off.y > 0.) color = vec3(1., 0.4, 0.2); else color = vec3(0., 1., 0.5);
+    }
+    vec2 a = vec2(0.);
+    vec2 b1 = vec2(1.);
+    vec2 b2 = vec2(1., -1.);
+    if (
+        dot(z_off - a, z_off - a) < 0.04 ||
+        dot(z_off - b1, z_off - b1) < 0.04 ||
+        dot(z_off - b2, z_off - b2) < 0.04
+    ) {
+        return mix(color, vec3(0.3, 0., 0.6), 0.5);
+    } else {
+        return color;
+    }
+}
+
 /*vec3 debug_stripe(vec2 z, vec2 charge) {
     float s = 0.5 * dot(conj(charge), z.yx); // the signed area (1/2) * D(charge, z)
     float s_off = 16.*abs(s - round(s)); // fold s into the fundamental domain [0, 8]
@@ -266,18 +298,14 @@ vec3 raw_image(
     float r_sq = dot(p, p);
     if (r_sq < 1.) {
         vec3 u = orient * vec3(p, sqrt(1. - r_sq));
-        color = stripe(rectify * peirce_proj(u, m, K_val), charge);
-        /*float t = mod(iTime, 4.);
-        if (t < 2.) {
-            color = stripe(rectify * peirce_proj(u, m, K_val), charge);
-        } else {
-            color = debug_stripe(rectify * peirce_proj(u, m, K_val), charge);
-        }*/
+        /*color = stripe(rectify * peirce_proj(u, m, K_val), charge);*/
+        color = debug_check(rectify * peirce_proj(u, m, K_val));
+        /*if (u.z < 0.) color *= 0.9;*/
     } else {
         vec2 p_mini = 1.2*(p + 2.25*ONE);
         if (0. < p_mini.x && p_mini.x < 1. && abs(p_mini.y) < 1.) {
-            color = stripe(p_mini, charge);
-            /*color = debug_stripe(p_mini, charge);*/
+            /*color = stripe(p_mini, charge);*/
+            color = debug_check(p_mini);
         }
     }
     return color;
@@ -294,9 +322,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     mat3 orient = euler_rot(attitude);
     /*mat3 orient = mat3(1.);*/
     
-    // set modulus
+    // set parameter
     float s = sin(0.5*iTime);
-    vec2 m = vec2(0.5, SQRT3_2/(1. + exp(4.*s)));
+    vec2 m = vec2(0.5 + 0.4330127018922192/(1. + exp(6.*s)), 0.);
+    /*vec2 m = vec2(0.5, SQRT3_2/(1. + exp(4.*s)));*/
     mat2 quarter_frame = mat2(K(m), mul(I, K(ONE - m)));
     mat2 rectify = inverse(quarter_frame * mat2(1., -1., 1., 1.));
     
