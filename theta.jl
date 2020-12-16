@@ -42,4 +42,4 @@ function theta(z, tau, N)
     exp(twist) * theta_series(z_off, tau, N)
 end
 
-modulus(tau, N) = 1 - (theta(1/2, tau, N) / theta(0, tau, N))^4
+parameter(tau, N) = 1 - (theta(1/2, tau, N) / theta(0, tau, N))^4

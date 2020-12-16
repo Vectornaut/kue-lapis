@@ -194,6 +194,14 @@ mat3 rot_yz(float t) {
     );
 }
 
+mat3 rot_zx(float t) {
+    return mat3(
+        cos(t), 0.0, -sin(t),
+           0.0, 1.0,     0.0,
+        sin(t), 0.0,  cos(t)
+    );
+}
+
 // attitude = vec3(precession, nutation spin)
 mat3 euler_rot(vec3 attitude) {
     return rot_xy(attitude[0]) * rot_yz(attitude[1]) * rot_xy(attitude[2]);
@@ -286,17 +294,17 @@ vec3 raw_image(
 const float SQRT3_2 = 0.8660254037844386;
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-    // find smal dimension
+    // find small dimension
     float small_dim = min(iResolution.x, iResolution.y);
     
     // set attitude
-    vec3 attitude = iTime * 0.2 * vec3(1./(2.+PI), 1./2., 1./PI);
-    mat3 orient = euler_rot(attitude);
-    /*mat3 orient = mat3(1.);*/
+    mat3 orient = rot_xy(0.5*PI) * rot_zx(0.2*iTime);
     
-    // set modulus
-    float s = sin(0.5*iTime);
-    vec2 m = vec2(0.5, SQRT3_2/(1. + exp(4.*s)));
+    // set parameter
+    /*float s = sin(0.5*iTime);
+    vec2 m = vec2(0.5, SQRT3_2/(1. + exp(4.*s)));*/
+    float t = PI/2. * iTime;
+    vec2 m = 0.75*vec2(cos(t), sin(t)) - vec2(0.25, 0.);
     mat2 quarter_frame = mat2(K(m), mul(I, K(ONE - m)));
     mat2 rectify = inverse(quarter_frame * mat2(1., -1., 1., 1.));
     
