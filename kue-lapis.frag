@@ -291,29 +291,28 @@ vec3 debug_check(vec2 z) {
     return color;
 }*/
 
-const vec2 charge = vec2(0., 1.);
-
 vec3 raw_image(
     vec2 fragCoord,
     float small_dim,
     mat3 orient,
     vec2 m,
     vec2 K_val,
-    mat2 rectify
+    mat2 rectify,
+    vec2 charge
 ) {
     vec2 p = 2.2*(fragCoord - 0.5*iResolution.xy)/small_dim - vec2(0.65, 0.);
     vec3 color = vec3(0.1, 0.0, 0.2);
     float r_sq = dot(p, p);
     if (r_sq < 1.) {
         vec3 u = orient * vec3(p, sqrt(1. - r_sq));
-        /*color = stripe(rectify * peirce_proj(u, m, K_val), charge);*/
-        color = debug_check(rectify * peirce_proj(u, m, K_val));
+        color = stripe(rectify * peirce_proj(u, m, K_val), charge);
+        /*color = debug_check(rectify * peirce_proj(u, m, K_val));*/
         /*if (u.z < 0.) color *= 0.9;*/
     } else {
         vec2 p_mini = 1.2*(p + 2.25*ONE);
         if (0. < p_mini.x && p_mini.x < 1. && abs(p_mini.y) < 1.) {
-            /*color = stripe(p_mini, charge);*/
-            color = debug_check(p_mini);
+            color = stripe(p_mini, charge);
+            /*color = debug_check(p_mini);*/
         }
     }
     return color;
@@ -331,7 +330,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     // set parameter
     /*float s = sin(0.5*iTime);
     vec2 m = vec2(0.5, SQRT3_2/(1. + exp(4.*s)));*/
-    float t = PI/2. * iTime;
+    float t/* = PI/2. * iTime*/;
+    vec2 charge;
+    if (mod(iTime, 2.) < 1.) {
+        t = 0.9999*PI;
+        charge = vec2(0., 1.);
+    } else {
+        t = 1.0001*PI;
+        charge = vec2(1., 2.);
+    }
     vec2 m = 0.75*vec2(cos(t), sin(t)) - vec2(0.25, 0.);
     mat2 quarter_frame = mat2(K(m), mul(I, K(ONE - m)));
     mat2 rectify = inverse(quarter_frame * mat2(1., -1., 1., 1.));
@@ -347,7 +354,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
                 orient,
                 m,
                 quarter_frame[0],
-                rectify
+                rectify,
+                charge
             );
             jiggle.y = -jiggle.y;
         }
