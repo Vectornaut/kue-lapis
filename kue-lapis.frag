@@ -159,28 +159,6 @@ vec2 peirce_proj(vec3 u, vec2 m, vec2 K_val) {
     }
 }
 
-/*vec2 peirce_proj(vec3 u, vec2 m, vec2 K_val) {
-    // project stereographically onto the equatorial disk
-    vec2 zeta = u.xy / (1. + abs(u.z));
-    
-    // map into the top-sheet diamond, which looks like
-    //
-    //           (1,  1)
-    //            .   .
-    //          .       .
-    //     (0,  0)     (2,  0)
-    //          .       .
-    //            .   .
-    //           (1, -1)
-    //
-    // in the K(m), iK(1-m) frame
-    vec2 z = F(cacos(-zeta), m, K_val);
-    
-    // if we're on the bottom sheet, reflect across the southwest edge of the
-    // top-sheet diamond
-    if (u.z > 0.) return z; else return -z.yx;
-}*/
-
 // --- euler angles ---
 
 mat3 rot_xy(float t) {
@@ -263,34 +241,6 @@ vec3 debug_check(vec2 z) {
     }
 }
 
-/*vec3 debug_stripe(vec2 z, vec2 charge) {
-    float s = 0.5 * dot(conj(charge), z.yx); // the signed area (1/2) * D(charge, z)
-    float s_off = 16.*abs(s - round(s)); // fold s into the fundamental domain [0, 8]
-    vec3 color;
-    if (s_off < 1.) {
-        color = color_e;
-    } else if (s_off < 3.) {
-        color = color_d;
-    } else if (s_off < 5.) {
-        color = color_c;
-    } else if (s_off < 7.) {
-        color = color_b;
-    } else {
-        color = color_a;
-    }
-    if (z.y > 0.975) {
-        color = mix(color, vec3(1., 1., 0.), 0.5);
-    } else if (z.y < -0.975) {
-        color = mix(color, vec3(0., 0., 1.), 0.5);
-    }
-    if (z.x < 0.025) {
-      color = mix(color, vec3(0.25, 1., 0.), 0.5);
-    } else if (z.x > 0.975) {
-      color = mix(color, vec3(0., 0.75, 1.), 0.5);
-    }
-    return color;
-}*/
-
 vec3 raw_image(
     vec2 fragCoord,
     float small_dim,
@@ -317,8 +267,6 @@ vec3 raw_image(
     }
     return color;
 }
-
-const float SQRT3_2 = 0.8660254037844386;
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     // find small dimension
