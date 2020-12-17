@@ -328,20 +328,19 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     mat3 orient = rot_xy(0.5*PI) * rot_zx(0.2*iTime);
     
     // set parameter
-    /*float s = sin(0.5*iTime);
-    vec2 m = vec2(0.5, SQRT3_2/(1. + exp(4.*s)));*/
-    float t/* = PI/2. * iTime*/;
-    vec2 charge;
-    if (mod(iTime, 2.) < 1.) {
-        t = 0.9999*PI;
-        charge = vec2(0., 1.);
-    } else {
-        t = 1.0001*PI;
-        charge = vec2(1., 2.);
-    }
-    vec2 m = 0.75*vec2(cos(t), sin(t)) - vec2(0.25, 0.);
+    float s = iTime/4.;
+    float t = 2.*PI*s;
+    vec2 m = vec2(-0.25, 0.) - 0.75*vec2(cos(t), sin(t));
     mat2 quarter_frame = mat2(K(m), mul(I, K(ONE - m)));
     mat2 rectify = inverse(quarter_frame * mat2(1., -1., 1., 1.));
+    
+    // set charge. when the parameter crosses the negative real axis from above,
+    // we shear the charge lattice by the linear map
+    //   (-1, 0) |--> (0, 1)
+    //   ( 1, 1) |--> (1, 1)
+    // to compensate
+    float n_twist = floor(s);
+    vec2 charge = vec2(0., 1.) + n_twist*vec2(1.);
     
     // mix subpixels
     vec2 jiggle = vec2(0.25);
