@@ -325,12 +325,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float small_dim = min(iResolution.x, iResolution.y);
     
     // set attitude
-    mat3 orient = rot_xy(0.5*PI) * rot_zx(0.2*iTime);
+    mat3 orient = rot_xy(0.5*PI) * rot_zx(PI*(0.75 + iTime/30.));
     
     // set parameter
-    float s = iTime/4.;
+    float s = 15.*sin(PI*iTime/120.);
     float t = 2.*PI*s;
-    vec2 m = vec2(-0.25, 0.) - 0.75*vec2(cos(t), sin(t));
+    vec2 m = vec2(0.1, 0.) - 0.4*vec2(cos(t), sin(t));
     mat2 quarter_frame = mat2(K(m), mul(I, K(ONE - m)));
     mat2 rectify = inverse(quarter_frame * mat2(1., -1., 1., 1.));
     
